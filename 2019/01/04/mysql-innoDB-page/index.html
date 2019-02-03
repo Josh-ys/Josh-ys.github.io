@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/image/header.jpg?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/image/header.jpg?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/image/header.jpg?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/image/header.jpg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="教程,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言​    关于数据库我们知道是通过内存对磁盘进行操作的，也知道数据会落实到磁盘上，但是数据在磁盘上的存储结构可能大家还不是很清楚。 ​    MySQL服务器上负责对表中的数据的读取和写入的工作的部分是存储引擎，而关于服务器会支持不同类型的服务器，如：InnoDB、MyISAM、Memory…… ​    不同的存储引擎都是为了实现不同的特性进行开发的，真实数据的存储在不同的存储引擎中存放的格">
+<meta name="keywords" content="教程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="InnoDB数据页结构详解">
+<meta property="og:url" content="https://joeysh.top/2019/01/04/mysql-innoDB-page/index.html">
+<meta property="og:site_name" content="Joeysh">
+<meta property="og:description" content="前言​    关于数据库我们知道是通过内存对磁盘进行操作的，也知道数据会落实到磁盘上，但是数据在磁盘上的存储结构可能大家还不是很清楚。 ​    MySQL服务器上负责对表中的数据的读取和写入的工作的部分是存储引擎，而关于服务器会支持不同类型的服务器，如：InnoDB、MyISAM、Memory…… ​    不同的存储引擎都是为了实现不同的特性进行开发的，真实数据的存储在不同的存储引擎中存放的格">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/InnoDB页结构示意图.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/储存过程.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/表格式.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/行格式简化图.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/数据行格式.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/minAndMax.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/记录结构1.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/偏移量1.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/偏移量2.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/偏移量3.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/page1.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/page2.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/page3.jpg">
+<meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/page4.jpg">
+<meta property="og:updated_time" content="2019-02-03T07:53:17.620Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="InnoDB数据页结构详解">
+<meta name="twitter:description" content="前言​    关于数据库我们知道是通过内存对磁盘进行操作的，也知道数据会落实到磁盘上，但是数据在磁盘上的存储结构可能大家还不是很清楚。 ​    MySQL服务器上负责对表中的数据的读取和写入的工作的部分是存储引擎，而关于服务器会支持不同类型的服务器，如：InnoDB、MyISAM、Memory…… ​    不同的存储引擎都是为了实现不同的特性进行开发的，真实数据的存储在不同的存储引擎中存放的格">
+<meta name="twitter:image" content="https://joeysh.top/image/mysql_InnoDB_page/InnoDB页结构示意图.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '4G8S3R0MY4',
+      apiKey: 'b6ed6711ef12687155afcc593b3e8aca',
+      indexName: 'blog',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://joeysh.top/2019/01/04/mysql-innoDB-page/">
+
+
+
+
+
+  <title>InnoDB数据页结构详解 | Joeysh</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Joeysh</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">个人博客</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  
+  <div class="algolia-popup popup search-popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+  </div>
+
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://joeysh.top/2019/01/04/mysql-innoDB-page/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joeysh">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/image/header.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Joeysh">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">InnoDB数据页结构详解</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-04T22:36:53+08:00">
+                2019-01-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/教程/" itemprop="url" rel="index">
+                    <span itemprop="name">教程</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv"></span>次
+            </span>
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  6.8k
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  23
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>​    关于数据库我们知道是通过内存对磁盘进行操作的，也知道数据会落实到磁盘上，但是数据在磁盘上的存储结构可能大家还不是很清楚。</p>
+<p>​    MySQL服务器上负责对表中的数据的读取和写入的工作的部分是存储引擎，而关于服务器会支持不同类型的服务器，如：InnoDB、MyISAM、Memory……</p>
+<p>​    不同的存储引擎都是为了实现不同的特性进行开发的，<font color="red">真实数据的存储在不同的存储引擎中存放的格式一般是不同的</font>，有的存储引擎比如Memory都不用磁盘来存储数据，就跟NoSQL一样，服务器关闭后数据就不见了。InnoDB是MySQL的默认储存引擎，也是我们大家常用的存储引擎。</p>
+<p>​    Mysql把页作为管理存储空间的基本单位，一个页的大小一般是16KB，大家知道记录其实是被储存在页中的，本文将详细的带大家看一下<font color="red">InnoDB</font>储存引擎中页的结构。</p>
+<hr>
+<h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><p>​    参考文章：<a href="https://mp.weixin.qq.com/s?__biz=MzIxNTQ3NDMzMw==&mid=2247483678&idx=1&sn=913780d42e7a81fd3f9b747da4fba8ec&chksm=979688eca0e101fa0913c3d2e6107dfa3a6c151a075c8d68ab3f44c7c364d9510f9e1179d94d&scene=21#wechat_redirect" target="_blank" rel="noopener">InnoDB数据页结构</a></p>
+<hr>
+<h2 id="InnoDB页"><a href="#InnoDB页" class="headerlink" title="InnoDB页"></a>InnoDB页</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>​    <code>InnoDB</code>是一个将表中的数据存储到磁盘上的存储引擎，所以即使关机后重启我们的数据还是存在的。而真正处理数据的过程是发生在内存中的，所以需要把磁盘中的数据加载到内存中，如果是处理写入或修改请求的话，还需要把内存中的内容刷新到磁盘上。而我们知道读写磁盘的速度非常慢，和内存读写之间的差距就不再多说，所以当我们想从表中获取某些记录时，<code>InnoDB</code>存储引擎需要一条一条的把记录从磁盘上读出来么？不，那样会慢死，<code>InnoDB</code>采取的方式是：将数据划分为若干个页，以页作为磁盘和内存之间交互的基本单位，InnoDB中页的大小一般为 <strong>16</strong>KB。也就是在一般情况下，一次最少从磁盘中读取16KB的内容到内存中，一次最少把内存中的16KB内容刷新到磁盘中。</p>
+<h3 id="页结构"><a href="#页结构" class="headerlink" title="页结构"></a>页结构</h3><p>​    页的本质介绍一个大小为16KB大小的存储空间，页有很多种类型的，不同的类型有不同的作用；</p>
+<p>​    用于存储记录的页被称为<font color="red">数据页</font> ，大小也为16KB，但是这16KB大小的存储空间被划分为多个部分，不同的部分当然有着不同的功能，结构如下：</p>
+<p><img src="/image/mysql_InnoDB_page/InnoDB页结构示意图.jpg" alt=""></p>
+<p>​    从上面的图可以看到，InnoDB的页结构分为七个部分，下面用表格说明一下各个部分对应的作用：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">名称</th>
+<th style="text-align:center">中文名</th>
+<th style="text-align:center">占用空间大小</th>
+<th style="text-align:center">简单描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">File Header</td>
+<td style="text-align:center">文件头</td>
+<td style="text-align:center">38字节</td>
+<td style="text-align:center">描述页的信息</td>
+</tr>
+<tr>
+<td style="text-align:center">Page Header</td>
+<td style="text-align:center">页头</td>
+<td style="text-align:center">56字节</td>
+<td style="text-align:center">页的状态信息</td>
+</tr>
+<tr>
+<td style="text-align:center">Infimum  + SupreMum</td>
+<td style="text-align:center">最小记录和最大记录</td>
+<td style="text-align:center">26字节</td>
+<td style="text-align:center">两个虚拟的行记录（后面会说明）</td>
+</tr>
+<tr>
+<td style="text-align:center">User Records</td>
+<td style="text-align:center">用户记录</td>
+<td style="text-align:center">不确定</td>
+<td style="text-align:center">实际存储的行记录内容</td>
+</tr>
+<tr>
+<td style="text-align:center">Free Space</td>
+<td style="text-align:center">空闲空间</td>
+<td style="text-align:center">不确定</td>
+<td style="text-align:center">页中尚未使用的空间</td>
+</tr>
+<tr>
+<td style="text-align:center">Page Directory</td>
+<td style="text-align:center">页目录</td>
+<td style="text-align:center">不确定</td>
+<td style="text-align:center">页中的记录相对位置</td>
+</tr>
+<tr>
+<td style="text-align:center">File Trailer</td>
+<td style="text-align:center">文件结尾</td>
+<td style="text-align:center">8字节</td>
+<td style="text-align:center">结尾信息</td>
+</tr>
+</tbody>
+</table>
+<p>​    下面会详细介绍他们的作用</p>
+<hr>
+<h4 id="页中的存储"><a href="#页中的存储" class="headerlink" title="页中的存储"></a>页中的存储</h4><p>​    当我们在存储数据的时候，记录会存储到<font color="red">User Records</font>部分 。但是在一个页新形成的时候是不存在<code>User Records</code> 这个部分的，每当我们在插入一条记录的时候，都会从<font color="red">Free Space</font>中去申请一块大小符合该记录大小的空间并划分到<code>User Records</code>，当<code>Free Space</code>的部分空间全部被<code>User Records</code>部分替换掉之后，就意味着当前页使用完毕，如果还有新的记录插入，需要再去申请新的页，过程如下：</p>
+<p><img src="/image/mysql_InnoDB_page/储存过程.jpg" alt=""></p>
+<h4 id="记录头"><a href="#记录头" class="headerlink" title="记录头"></a>记录头</h4><p>​    对于<font color="red">User Records</font>中的每一条记录的管理，MySQL做了很多的处理，究竟做出了什么处理呢，这需要从每条记录里面的<code>记录的额外信息</code>部分中的<code>记录头信息说起</code> 这是有关行格式的知识，关于行格式（指的就是一条记录的存储结构，有多种格式），有兴趣的可以去看一下<a href="https://mp.weixin.qq.com/s?__biz=MzIxNTQ3NDMzMw==&mid=2247483670&idx=1&sn=751d84d0ce50d64934d636014abe2023&chksm=979688e4a0e101f2a51d1f06ec75e25c56f8936321ae43badc2fe9fc1257b4dc1c24223699de&scene=21#wechat_redirect" target="_blank" rel="noopener">InnoDB记录存储结构</a> 这篇文章。</p>
+<p>​    首先，创建一个表：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE page_demo(</span><br><span class="line">    -&gt;     c1 INT,</span><br><span class="line">    -&gt;     c2 INT,</span><br><span class="line">    -&gt;     c3 VARCHAR(10000),</span><br><span class="line">    -&gt;     PRIMARY KEY (c1)</span><br><span class="line">    -&gt; ) CHARSET=ascii ROW_FORMAT=Compact;</span><br><span class="line">Query OK, 0 rows affected (0.03 sec)</span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>​    如上所示，表中有三列，c1和c2用来存储整数的，c3用来存储字符串的。因为指定了主键为c1，所以MySQL就不会去创建那个隐藏的 <font color="red">row_id</font> 列。指定了<code>ascii</code>字符集以及<code>Compact</code>的行格式，所以里面的每一条记录的行格式如下：</p>
+<p><img src="/image/mysql_InnoDB_page/表格式.jpg" alt=""></p>
+<p>​    先看一下行格式中每个属性代表的意思：</p>
+<p>​    </p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">名称</th>
+<th style="text-align:center">大小（单位：bit）</th>
+<th style="text-align:center">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">预留位1</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">没有使用</td>
+</tr>
+<tr>
+<td style="text-align:center">预留位2</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">没有使用</td>
+</tr>
+<tr>
+<td style="text-align:center">delete_mask</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">标记该记录是否被删除</td>
+</tr>
+<tr>
+<td style="text-align:center">min_rec_mask</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">标记该记录是否为B+树的非叶子节点中的最小记录（索引时用到）</td>
+</tr>
+<tr>
+<td style="text-align:center">n_owned</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">表示当前槽管理的记录数</td>
+</tr>
+<tr>
+<td style="text-align:center">heap_no</td>
+<td style="text-align:center">13</td>
+<td style="text-align:center">表示当前记录在记录堆的位置信息</td>
+</tr>
+<tr>
+<td style="text-align:center">record_type</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">表示当前记录的类型，<code>0</code>表示普通记录，<code>1</code>表示B+树非叶节点记录，<code>2</code>表示最小记录，<code>3</code>表示最大记录</td>
+</tr>
+<tr>
+<td style="text-align:center">next_record</td>
+<td style="text-align:center">16</td>
+<td style="text-align:center">表示下一条记录的相对位置</td>
+</tr>
+</tbody>
+</table>
+<p>​    由于这里只是描述在<code>User Records</code>中记录头的作用，所以下面只会说明一些相关的属性以及<code>c1</code>、<code>c2</code>、<code>c3</code>列的信息（其他信息没画不代表它们不存在，只是为了理解上的方便省略了～），简化后的行格式示意图就是这样：</p>
+<p><img src="/image/mysql_InnoDB_page/行格式简化图.jpg" alt=""></p>
+<p>​    我们往表中插入几条数据：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; INSERT INTO page_demo VALUES(1, 100, &apos;aaaa&apos;), (2, 200, &apos;bbbb&apos;), (3, 300, &apos;cccc&apos;), (4, 400, &apos;dddd&apos;);</span><br><span class="line">Query OK, 4 rows affected (0.00 sec)</span><br><span class="line">Records: 4  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>​    下面看看几条记录在页中的<code>User Records</code>是以何种形式进行体现的，为了方便理解，下面的图中把记录中的头信息和实际的数据都用的十进制进行的表示（其实都是二进制）：</p>
+<p>​    <img src="/image/mysql_InnoDB_page/数据行格式.jpg" alt=""></p>
+<p>​    下面说说，记录头中的各个部分代表的含义：</p>
+<h5 id="delete-mask"><a href="#delete-mask" class="headerlink" title="delete_mask"></a>delete_mask</h5><p>​    这个属性说的是当前这条记录是否被删除，当值为0的时候代表着没有被删除，为1的时候标志着被删除了。</p>
+<p>是的，您没看错，当您执行删除一个记录的操作的时候，被删除的记录还存在页中，您对它进行了删除，它会把的</p>
+<p>记录头中的这个属性设置为1，只是打了个标记。</p>
+<blockquote>
+<p>原因</p>
+<p>这些被删除的记录之所以不立即从磁盘上移除，是因为移除它们之后把其他的记录在磁盘上重新排列需要性能消耗，所以只是打个删除标记而已，而且这部分存储空间之后还可以重用，也就是说之后如果有新记录插入到表中的话，可能把这些被删除的记录占用的存储空间覆盖掉。</p>
+<p>如果您想彻底的从磁盘上移除这些被删除的记录，可以使用这个语句：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;optimize table &apos;表名&apos;;</span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<blockquote>
+<p>执行这个命令后服务器会重新规划表中记录的存储方式，把被标记为删除的记录从磁盘上移除。  </p>
+</blockquote>
+<h5 id="min-rec-mask"><a href="#min-rec-mask" class="headerlink" title="min_rec_mask"></a>min_rec_mask</h5><p>​    有关索引的，暂时不说，后面说到索引会说明；</p>
+<h5 id="n-owned"><a href="#n-owned" class="headerlink" title="n_owned"></a>n_owned</h5><p>​    下面会讲</p>
+<h5 id="heap-no"><a href="#heap-no" class="headerlink" title="heap_no"></a>heap_no</h5><p>​    这个属性是表示的当前记录在当前页中的位置，上面的一张图如果您仔细看了的话，会发现它们的位置分别是2、3、4、5，那么问题来了？ 0和1呢？</p>
+<p>​    这是因为在每次创建的一页里面会自动的加入两条记录，这被称为<code>伪记录</code> 或者 <code>虚拟记录</code> （因为不是我们自己插入的）;</p>
+<p>​    这两条伪记录一个代表着<code>最小记录</code>，一个代表着<code>最大记录</code> ；</p>
+<p>​    记录大小的比较是通过主键值来比较的。在上面我们插入的几条记录中的从小到大的顺序就是：1 &lt; 2 &lt; 3 &lt; 4,</p>
+<p>这标志着这4条记录的大小依次递增。 </p>
+<p>​    不管我们插入了什么数据，页中的<code>最小记录</code> 和 <code>最大记录</code> 都是页生成时候的那两条伪记录。这两条伪记录的结构页相对简单，如下：</p>
+<p>​    <img src="/image/mysql_InnoDB_page/minAndMax.jpg" alt=""></p>
+<p>​    还记得页结构组成的七部分中一个部分叫<code>Infimum  + SupreMum</code> ，这个部分用来存储最小记录和最大记录的，没错，就是这两条伪记录。</p>
+<blockquote>
+<blockquote>
+<p>原因：由于这两条记录不是我们自己定义的记录，所以它们并不存放在<code>页</code>的<code>User Records</code>部分，他们被单独放在一个称为<code>Infimum + Supremum</code>的部分</p>
+</blockquote>
+</blockquote>
+<p>​    <img src="/image/mysql_InnoDB_page/记录结构1.jpg" alt=""></p>
+<p>​    由上面的图可以看出，最小记录和最大记录的heap_no的值分别为0和1，也就是说它们的位置最靠前。</p>
+<h5 id="record-type"><a href="#record-type" class="headerlink" title="record_type"></a>record_type</h5><p>​    这个属性表示当前记录的类型，一共有4种类型的记录，<code>0</code>表示普通记录，<code>1</code>表示B+树非叶节点记录，<code>2</code>表示最小记录，<code>3</code>表示最大记录。从图中我们也可以看出来，我们自己插入的记录就是普通记录，它们的<code>record_type</code>值都是<code>0</code>，而最小记录和最大记录的<code>record_type</code>值分别为<code>2</code>和<code>3</code> ，关于1暂且不说；</p>
+<h5 id="next-record"><a href="#next-record" class="headerlink" title="next_record"></a>next_record</h5><p>​    这个属性表示这<font color="red">从当前记录真实数据到下一条记录的真实数据的地址偏移量</font> ；</p>
+<p>​    假如有一条记录的<code>next_record</code> 的值为12，就标志着从这条记录的真实数据的地址往后找12个字节就是下一条记录的真实数据（链表）。也就是说<font color="red">页中的数据之间的联系是一个<strong>根据大小</strong>比较后从小指到大的<strong>单向链表</strong></font>。</p>
+<p>​    规定<font color="red"> <strong>最小记录</strong> 的下一条记录就本页中主键值最小的记录，而本页中主键值最大的记录的下一条记录就是 <strong>最大记录</strong>(最大的那条伪记录) </font>，为了更形象的表示一下这个<code>next_record</code>起到的作用，我们用箭头来替代一下<code>next_record</code>中的地址偏移量：</p>
+<p>​    <img src="/image/mysql_InnoDB_page/偏移量1.jpg" alt=""></p>
+<p>​    从上面可以看出，<code>最大记录</code> 的 <code>next_record</code> 的值为0，代表着最大记录的下一条记录是不存在的，它也是链条中的<font color="red">最后一个节点</font>。</p>
+<p>​    当我们从页中删除一条数据后可以看看链表会发生那些变化：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; DELETE FROM page_demo WHERE c1 = 2;</span><br><span class="line">Query OK, 1 row affected (0.02 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>​    删掉第2条记录后的示意图就是：</p>
+<p>​        <img src="/image/mysql_InnoDB_page/偏移量2.jpg" alt=""></p>
+<p>​    从上面可以看到：</p>
+<blockquote>
+<blockquote>
+<p>当我们删除第二条记录后，链表中的变化最明显的就是各个节点之间的联系，它会把被删除数据的上一条记录和被删除数据的下一条数据进行关联（这条数据还是存在的，之前说的那个删除标记别忘了哦）。</p>
+<ul>
+<li>第2条记录并没有从存储空间中移除，而是把该条记录的<code>delete_mask</code>值设置为<code>1</code>。</li>
+<li>第2条记录的<code>next_record</code>值变为了0，意味着该记录没有下一条记录了。</li>
+<li>第1条记录的<code>next_record</code>指向了第3条记录。</li>
+<li>还有一点您可能忽略了，就是<code>最大记录</code>的<code>n_owned</code>值从<code>5</code>变成了<code>4</code>，关于这一点的变化我们稍后会详细说明的。</li>
+</ul>
+<p>所以得到：<font color="red">不论我们怎么对页中的记录做增删改操作，InnoDB始终会维护一条记录的单链表，链表中的各个节点是按照主键值由小到大的顺序连接起来的</font>。</p>
+</blockquote>
+</blockquote>
+<p>​    </p>
+<p>​    下面我们再做一个操作，把删除的记录再次插入：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; INSERT INTO page_demo VALUES(2, 200, &apos;bbbb&apos;);</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>​    我们来看看发生了什么变化：</p>
+<p>​        <img src="/image/mysql_InnoDB_page/偏移量3.jpg" alt=""></p>
+<p>​    很明显的可以看到，<font color="red"><code>InnoDB</code>并没有因为新记录的插入而为它申请新的存储空间，而是直接复用了原来被删除记录的存储空间</font>。</p>
+<h4 id="Page-Directory"><a href="#Page-Directory" class="headerlink" title="Page Directory"></a>Page Directory</h4><p>​    通过上面，我们知道到了页中记录是一个按照大小从下到大连续的单向链表，现在来想想，当我们根据主键查询一条记录的时候是怎样进行的，我们来看看;</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM page_demo WHERE c1 = 3;</span><br></pre></td></tr></table></figure>
+<p>​    上面是一条查询语句，我们想想它的执行方式可能是：</p>
+<p>​    从最小记录开始，沿着链表一直往后找，总有一天会找到（或者找不到），在找的时候还能投机取巧，因为链表中各个记录的值是按照从小到大顺序排列的，所以当链表的某个节点代表的记录的主键值大于您想要查找的主键值时，如果这个时候还没找到数据的话您就可以停止查找了（代表找不到），因为该节点后边的节点的主键值都是依次递增。</p>
+<p>​    上面的方式存在的问题就是，当页中的存储的记录数量比较少的情况用起来也没啥问题，但是如果一个页中存储了非常多的记录，这么查找对性能来说还是有损耗的，所以这个方式很笨啊。</p>
+<p>​    我们来看看<code>InnoDB</code> 的处理方式：<code>InnoDB</code> 的处理方式相当于我们平时看书的时候，想看那一章的时候不会傻到去一页一页的找，而是通过目录去找到对应的页数，直接就定位过去了。说说<code>InnoDB</code> 这样处理的步骤吧：</p>
+<p>​    1. 将所有正常的记录（包括最大和最小记录，不包括标记为已删除的记录）划分为几个组。</p>
+<p>​    2. 每个组的<font color="red">最后一条记录</font>的头信息中的<code>n_owned</code>属性表示该组内共有几条记录。</p>
+<p>​    3. <font color="red">将每个组的最后一条记录的地址偏移量按顺序存储起来</font>，每个地址偏移量也被称为一个<code>槽</code>（英文名：<code>Slot</code>）。这些地址偏移量都会被存储到靠近<code>页</code>的尾部的地方，页中存储地址偏移量的部分也被称为<code>Page Directory</code> 。</p>
+<p>​    </p>
+<p>​    比如说，现在表中有6条记录，<code>InnoDB</code>会把它们分成两组，第一组中只有一个最小记录，第二组中是剩余的5条记录，看下边的示意图：</p>
+<p>​            <img src="/image/mysql_InnoDB_page/page1.jpg" alt=""></p>
+<p>​    从上面的图中可以看到：</p>
+<ul>
+<li>Page Directory中有两个槽，也就是两个组，槽0的值是90，代表最小记录的地址偏移量；槽2的值是112，代表最大记录的地址偏移量；</li>
+<li>注意记录中的最小记录和最大记录，他们分别是1和5：<ul>
+<li>最小记录的<code>n_owned</code> 的值为1，代表着以最小记录结尾的这个分组中只有1条记录，就是最小记录本身；</li>
+<li>同理，最大记录的<code>n_owned</code> 的值为5，代表着以最大记录结尾的这个分组中只有5条记录，这5条记录包括它本身，就是说除了它本身还有其它4条记录；</li>
+</ul>
+</li>
+</ul>
+<p>​    我们用图来表示一下：</p>
+<p>​                    <img src="/image/mysql_InnoDB_page/page2.jpg" alt=""></p>
+<p>​    上面的图中为了方便理解，暂时没管各条记录在存储设备上的排列方式了，单纯从逻辑上看一下这些记录和页目录的关系。真实的<code>Page Directory</code> 是在下面的。</p>
+<p>​    再说说，为什么最小记录的<code>n_owned</code>值为1，而最大记录的<code>n_owned</code>值为<code>5</code>呢？它们是怎么分配的？</p>
+<p>​    <code>InnoDB</code> 对每个分组中的记录条数是有规定的，<font color="red">对于最小记录所在的分组只能有 <strong>1</strong> 条记录，最大记录所在的分组拥有的记录条数只能在 <strong>1~8</strong> 条之间，剩下的分组中记录的条数范围只能在是 <strong>4~8</strong> 条之间。所以分组是按照下边的步骤进行的：</font></p>
+<ul>
+<li>初始情况下一个数据页里面只有最小记录和最大记录（伪记录），它们属于不同的分组，也就是两个；</li>
+<li>之后插入的每一条记录都会放到最大记录所在的组，直到最大记录所在组的记录数<font color="red">等于8条</font>；</li>
+<li>当最大记录所在组中的记录数等于8条的时候，如果还有记录插入的话，就会将最大记录所在组平均分裂成2个组，这个时候最大记录所在组就只剩下4条记录，这里再把这条记录再放入最大记录所在组；</li>
+</ul>
+<p>​    我们一口气又往表中添加了12条记录，现在就一共有16条正常的记录了（包括最小和最大记录），这些记录被分成了5个组，如图所示：</p>
+<p>​                    <img src="/image/mysql_InnoDB_page/page3.jpg" alt=""></p>
+<p>​    上图中，只保留了头信息中的<code>n_owned</code>和<code>next_record</code>属性，也省略了各个记录之间的箭头，没画不等于没有！</p>
+<p>​    因为各个槽代表的记录的主键值都是从小到大排序的，所以我们可以使用<code>二分法</code>来进行快速查找。4个槽的编号分别是：<code>0</code>、<code>1</code>、<code>2</code>、<code>3</code>、<code>4</code>，所以初始情况下最低的槽就是<code>low=0</code>，最高的槽就是<code>high=4</code>。比方说我们想找主键值为<code>5</code>的记录，现在我们再来看看查找一条记录的步骤：</p>
+<p>​    1.  首先得到中间槽的位置：<code>(0 + 4)/2 = 2</code> ,所以得到槽2，根据槽2的地址偏移量知道它的主键值是8，因为8&gt;5，设置<code>high=2</code> ，<code>low</code>不变；</p>
+<p>​    2. 再次计算中间槽的位置：<code>(0 + 2)/2 = 1</code> ,所以得到槽1，根据槽1的地址偏移量知道它的主键值是4, 因为4&lt;5，设置<code>low=1</code> ，<code>high</code>不变；</p>
+<p>​    3. 因为<code>high - low</code>的值为1，所以确定主键值为<code>5</code>的记录在<font color="red">槽1和槽2之间</font>，接下来就是遍历链表的查找了；</p>
+<p>​    </p>
+<p>​    所以在一个数据页中查找指定主键值的记录的过程分为两步：</p>
+<pre><code>1. 通过二分法确定该记录所在的槽。
+
+2. 通过记录的next_record属性组成的链表遍历查找该槽中的各个记录。
+</code></pre><h4 id="Page-Header"><a href="#Page-Header" class="headerlink" title="Page Header"></a>Page Header</h4><p>​    设计<code>InnoDB</code>的大叔们为了能得到一个数据页中存储的记录的状态信息，比如本页中已经存储了多少条记录，第一条记录的地址是什么，<code>Page Directory</code>中存储了多少个槽等等，特意在页中定义了一个叫<code>Page Header</code>的部分，它是<code>页</code>结构的第二部分，这个部分占用固定的<code>56</code>个字节，专门存储各种状态信息，具体各个字节都是干嘛的看下表：</p>
+<p>​    </p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">名称</th>
+<th style="text-align:center">大小（单位：byte）</th>
+<th style="text-align:center"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">PAGE_N_DIR_SLOTS</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">在页目录中的槽数量</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_HEAP_TOP</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">第一个记录的地址</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_N_HEAP</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">本页中的记录的数量（包括最小和最大记录以及标记为删除的记录）</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_FREE</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">指向可重用空间的地址（就是标记为删除的记录地址）</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_GARBAGE</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">已删除的字节数，行记录结构中<code>delete_flag</code>为1的记录大小总数</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_LAST_INSERT</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">最后插入记录的位置</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_DIRECTION</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">最后插入的方向</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_N_DIRECTION</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">一个方向连续插入的记录数量</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_N_RECS</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">该页中记录的数量（不包括最小和最大记录以及被标记为删除的记录）</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_MAX_TRX_ID</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">修改当前页的最大事务ID，该值仅在二级索引中定义</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_LEVEL</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">当前页在索引树中的位置，高度</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_INDEX_ID</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">索引ID，表示当前页属于哪个索引</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_BTR</td>
+<td style="text-align:center">10</td>
+<td style="text-align:center">非叶节点所在段的segment header，仅在B+树的Root页定义</td>
+</tr>
+<tr>
+<td style="text-align:center">PAGE_LEVEL</td>
+<td style="text-align:center">10</td>
+<td style="text-align:center">B+树所在段的segment header，仅在B+树的Root页定义</td>
+</tr>
+</tbody>
+</table>
+<p>​    如果大家认真看过前边的文章，那么大致能看明白这里头前边一半左右的状态信息的意思，剩下的状态信息看不明白不要着急，饭要一口一口吃，东西要一点一点学。在这里想强调以下<code>PAGE_DIRECTION</code>和<code>PAGE_N_DIRECTION</code>的意思。</p>
+<ul>
+<li><p><code>PAGE_DIRECTION</code></p>
+<p>假如新插入的一条记录的主键值比上一条记录的主键值比上一条记录大，我们说这条记录的插入方向是右边，反之则是左边。用来表示最后一条记录插入方向的状态就是<code>PAGE_DIRECTION</code>。</p>
+</li>
+<li><p><code>PAGE_N_DIRECTION</code></p>
+<p>假设连续几次插入新记录的方向都是一致的，<code>InnoDB</code>会把沿着同一个方向插入记录的条数记下来，这个条数就用<code>PAGE_N_DIRECTION</code>这个状态表示。当然，如果最后一条记录的插入方向改变了的话，这个状态的值会被清零重新统计。</p>
+</li>
+</ul>
+<h4 id="File-Header"><a href="#File-Header" class="headerlink" title="File Header"></a>File Header</h4><p>​    如果说<code>Page Header</code>描述的是<code>页</code>内的各种状态信息，比方说页里头有多少个记录了呀，有多少个槽了呀，那么<code>File Header</code>描述的就是<code>页</code>外的各种状态信息，比方说这个页的编号是多少，它的上一个页、下一个页是谁啦。<code>File Header</code>是<code>InnoDB</code>页的第一部分，这个部分占用固定的<code>38</code>个字节，下边我们看看这个部分的各个字节都是代表啥意思吧：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">名称</th>
+<th style="text-align:center">大小（单位：byte）</th>
+<th style="text-align:center">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">FIL_PAGE_SPACE_OR_CHKSUM</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">页的校验和（checksum值）</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_OFFSET</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">页号</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_PREV</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">上一个页的页号</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_NEXT</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">下一个页的页号</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_LSN</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">最后被修改的日志序列位置（英文名是：Log Sequence Number）</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_TYPE</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">该页的类型（之前我们说的是数据页）</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_FILE_FLUSH_LSN</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">仅在系统表空间的一个页中定义，代表文件至少被更新到了该LSN值，独立表空间中都是0</td>
+</tr>
+<tr>
+<td style="text-align:center">FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">页属于哪个表空间</td>
+</tr>
+</tbody>
+</table>
+<p>​    对照着这个表格，我们看几个目前比较重要的部分：</p>
+<ul>
+<li><p><code>FIL_PAGE_SPACE_OR_CHKSUM</code></p>
+<p>这个代表当前页面的校验和（checksum）。啥是个校验和？就是对于一个很长很长的字节串来说，我们会通过某种算法来计算一个值，这个值就称为<code>校验和</code>。这样在比较两个很长的字节串之前先比较这两个长字节串的校验和，如果校验和都不一样两个长字节串肯定是不同的（hashCode和equals），所以省去了直接比较两个比较长的字节串的时间损耗(和后面的File Trailer里面的那个相对应，看到后面您就明白了)。</p>
+</li>
+<li><p><code>FIL_PAGE_OFFSET</code></p>
+<p>每一个<code>页</code>都有一个单独的页号，就跟您的身份证号码一样，<code>InnoDB</code>通过页号来可以唯一定位一个<code>页</code>。</p>
+</li>
+<li><p><code>FIL_PAGE_TYPE</code></p>
+<p>这个代表当前<code>页</code>的类型，我们前边说过，<code>InnoDB</code>为了不同的目的而把页分为不同的类型，本集中介绍的其实都是存储记录的<code>数据页</code>，其实还有很多别的类型的页：</p>
+</li>
+<li><p><code>FIL_PAGE_PREV</code>和<code>FIL_PAGE_NEXT</code></p>
+<p> 一张表中可以有成千上万条记录，一个页只有<code>16KB</code>，所以可能需要好多页来存放数据，<code>FIL_PAGE_PREV</code>和<code>FIL_PAGE_NEXT</code>就分别代表本页的上一个和下一个页的页号（双向链表）。    <img src="/image/mysql_InnoDB_page/page4.jpg" alt=""></p>
+<p><code>Page Header</code> 的其它属性就不说了；</p>
+</li>
+</ul>
+<h4 id="File-Trailer"><a href="#File-Trailer" class="headerlink" title="File Trailer"></a>File Trailer</h4><p>​    对于这个部分，我的理解比较简单，我们知道<code>InnoDB</code> 会把数据从内存刷新到磁盘，中间交互的单位是<font color="red">页</font> ，但是我们想想，假如再刷新到磁盘的时候出现了问题，这样的话怎么办呢？</p>
+<p>​    这就是<code>File Trailer</code> 作用，这个部分由<code>8</code>个字节组成，可以分成2个小部分：</p>
+<ul>
+<li>前四个字节代表页的检验和：<ul>
+<li>这个部分是和<code>File Header</code>中的校验和相对应的。每当一个页面在内存中修改了，在同步之前就要把它的校验和算出来，因为<code>File Header</code>在页面的前边，所以校验和会被首先同步到磁盘，当完全写完时，校验和也会被写到页的尾部，如果完全同步成功，则页的首部和尾部的校验和应该是一致的，反之意味着同步中间出了错；<ul>
+<li>后四个字节代表日志序列位置（LSN）</li>
+<li>这个部分也是为了校验页的完整性的，可以先不用管这个属性。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><pre><code>1. InnoDB为了不同的目的而设计了不同类型的页，用于存放我们记录的页也叫做`数据页`。
+2. 一个数据页可以被分为7个部分，分别是
+ - `File Header`，表示文件头，占固定的38字节。
+ - `Page Header`，表示页里的一些状态信息，占固定的56个字节。
+ - `Infimum + Supremum`，两个虚拟的伪记录，分别表示页中的最小和最大记录，占固定的`26`个字节。
+ - `User Records`：真实存储我们插入的记录的部分，大小不固定。
+ - `Free Space`：页中尚未使用的部分，大小不确定。
+ - `Page Directory`：页中的记录相对位置，也就是各个槽在页面中的地址偏移量，大小不固定，插入的记录越多，这个部分占用的空间越多。
+</code></pre><ol start="3">
+<li>每个记录的头信息中都有一个<code>next_record</code>属性，从而使页中的所有记录串联成一个<code>单向链表</code>。</li>
+<li><code>InnoDB</code>会为把页中的记录划分为若干个组，每个组的最后一个记录的地址偏移量作为一个<code>槽</code>，存放在<code>Page Directory</code>中，所以在一个页中根据主键查找记录是非常快的，分为两步：<ul>
+<li>通过二分法确定该记录所在的槽。</li>
+<li>通过记录的next_record属性组成的链表遍历查找该槽中的各个记录。</li>
+</ul>
+</li>
+<li>每个数据页的<code>File Header</code>部分都有上一个和下一个页的编号，所以所有的数据页会组成一个<code>双链表</code>。</li>
+<li>为保证从内存中同步到磁盘的页的完整性，在页的首部和尾部都会存储页中数据的校验和和<code>LSN</code>值，如果首部和尾部的校验和和<code>LSN</code>值校验不成功的话，就说明同步过程出现了问题。</li>
+</ol>
+<h2 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h2><p>​    本文的大部分内容都是参考并使用的原文中的内容，只是在中间加入了一些自己的理解，并希望把它更清楚的表达出来，大家也可以去看看原文：</p>
+<p>​    <a href="https://mp.weixin.qq.com/s?__biz=MzIxNTQ3NDMzMw==&mid=2247483678&idx=1&sn=913780d42e7a81fd3f9b747da4fba8ec&chksm=979688eca0e101fa0913c3d2e6107dfa3a6c151a075c8d68ab3f44c7c364d9510f9e1179d94d&scene=21#wechat_redirect" target="_blank" rel="noopener">InnoDB数据页结构</a>  </p>
+<p>​    如果有地方理解的不对，还望指教。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/教程/" rel="tag"><i class="fa fa-tag"></i> 教程</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/01/mdTest/" rel="next" title="hi 2019">
+                <i class="fa fa-chevron-left"></i> hi 2019
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/04/hexo/" rel="prev" title="使用hexo+Anisina+github搭建个人博客">
+                使用hexo+Anisina+github搭建个人博客 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="lv-container" data-id="city" data-uid="MTAyMC80MTg4OS8xODQzNQ"></div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/image/header.jpg" alt="Joeysh">
+            
+              <p class="site-author-name" itemprop="name">Joeysh</p>
+              <p class="site-description motion-element" itemprop="description">有志者自有千计万计，<br>无志者只感千难万难。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/Joeyangsh" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/4c825155dac8" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-blogger-b"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://juejin.im/user/5b854099f265da433874ee02" target="_blank" title="掘金">
+                      
+                        <i class="fa fa-fw fa-blogger-b"></i>掘金</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#引用"><span class="nav-number">2.</span> <span class="nav-text">引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#InnoDB页"><span class="nav-number">3.</span> <span class="nav-text">InnoDB页</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#简介"><span class="nav-number">3.1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#页结构"><span class="nav-number">3.2.</span> <span class="nav-text">页结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#页中的存储"><span class="nav-number">3.2.1.</span> <span class="nav-text">页中的存储</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#记录头"><span class="nav-number">3.2.2.</span> <span class="nav-text">记录头</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#delete-mask"><span class="nav-number">3.2.2.1.</span> <span class="nav-text">delete_mask</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#min-rec-mask"><span class="nav-number">3.2.2.2.</span> <span class="nav-text">min_rec_mask</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#n-owned"><span class="nav-number">3.2.2.3.</span> <span class="nav-text">n_owned</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#heap-no"><span class="nav-number">3.2.2.4.</span> <span class="nav-text">heap_no</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#record-type"><span class="nav-number">3.2.2.5.</span> <span class="nav-text">record_type</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#next-record"><span class="nav-number">3.2.2.6.</span> <span class="nav-text">next_record</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Page-Directory"><span class="nav-number">3.2.3.</span> <span class="nav-text">Page Directory</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Page-Header"><span class="nav-number">3.2.4.</span> <span class="nav-text">Page Header</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#File-Header"><span class="nav-number">3.2.5.</span> <span class="nav-text">File Header</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#File-Trailer"><span class="nav-number">3.2.6.</span> <span class="nav-text">File Trailer</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#最后"><span class="nav-number">5.</span> <span class="nav-text">最后</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Joeysh</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+    <script type="text/javascript">
+      (function(d, s) {
+        var j, e = d.getElementsByTagName(s)[0];
+        if (typeof LivereTower === 'function') { return; }
+        j = d.createElement(s);
+        j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+        j.async = true;
+        e.parentNode.insertBefore(j, e);
+      })(document, 'script');
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  
+  
+  <link rel="stylesheet" href="/lib/algolia-instant-search/instantsearch.min.css">
+
+  
+  
+  <script src="/lib/algolia-instant-search/instantsearch.min.js"></script>
+  
+
+  <script src="/js/src/algolia-search.js?v=5.1.4"></script>
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+  <script type="text/javascript" src="/js/src/js.cookie.js?v=5.1.4"></script>
+  <script type="text/javascript" src="/js/src/scroll-cookie.js?v=5.1.4"></script>
+
+
+  
+
+</body>
+</html>

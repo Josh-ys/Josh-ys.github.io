@@ -117,7 +117,7 @@
 <meta property="og:image" content="https://joeysh.top/image/hexo/c.jpg">
 <meta property="og:image" content="https://joeysh.top/image/hexo/d.jpg">
 <meta property="og:image" content="https://joeysh.top/image/hexo/https.jpg">
-<meta property="og:updated_time" content="2019-01-06T12:04:49.930Z">
+<meta property="og:updated_time" content="2019-02-03T07:58:16.547Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="使用hexo+Anisina+github搭建个人博客">
 <meta name="twitter:description" content="前言   这是本人的最新博客，也是刚刚搭建起来的，过程中还是遇到了很多的坑，自己也对Anisina这个主题进行了一些更改，希望能够帮到大家，然后有兴趣的可以自己尝试进行搭建，话不多说，开始吧！ 起步hexo是一个是基于node.js的快速、简洁且高效的博客框架，Anisina是一个hexo的主题，简洁，明了，这也是本人选择这个主题的原因。 下载可以参考hexo的官网，对应环境需要node和git我">
@@ -523,28 +523,7 @@ date: 2019-01-01 00:00:00
 </ul>
 <p>这样创建就完成了。<br>接下来是修改配置文件了，打开您的_config.yml添加以下配置：<br><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">algolia:</span></span><br><span class="line"><span class="attr">applicationID:</span> <span class="string">"your Application ID"</span></span><br><span class="line"><span class="attr">apiKey:</span> <span class="string">"your Search-Only API Key"</span></span><br><span class="line"><span class="attr">adminApiKey:</span> <span class="string">"your Admin API Key"</span></span><br><span class="line"><span class="attr">chunkSize:</span> <span class="number">5000</span></span><br><span class="line"><span class="attr">indexName:</span> <span class="string">"输入刚才创建index name"</span></span><br></pre></td></tr></table></figure></p>
 <p>配置完成了，接下来我们要修改主题中的元素了，首先就添加顶部的搜索按钮。<br>打开themes/Anisina/layout/_partial/nav.ejs<br><br>1、在ul标签中加入以下内容：<br><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">li</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">%</span> <span class="attr">if</span> (<span class="attr">config.algolia</span>)&#123; %&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">li</span>&gt;</span></span><br><span class="line">	  <span class="tag">&lt;<span class="name">a</span> <span class="attr">href</span>=<span class="string">"#search"</span> <span class="attr">class</span>=<span class="string">"popup-trigger"</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">i</span> <span class="attr">class</span>=<span class="string">"fa fa-search"</span>&gt;</span><span class="tag">&lt;/<span class="name">i</span>&gt;</span></span><br><span class="line">	  <span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">li</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">%</span> &#125; %&gt;</span></span><br><span class="line">   <span class="tag">&lt;/<span class="name">li</span>&gt;</span>/</span><br></pre></td></tr></table></figure></p>
-<p>2、添加搜索弹出的model框，同样是themes/Anisina/layout/_partial/nav.ejs，在最下面加上以下代码<br></p>
-<pre><code class="html"><span class="tag">&lt;<span class="name">%</span> <span class="attr">if</span> (<span class="attr">config.algolia</span>){ %&gt;</span>
-    <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"site-search"</span>&gt;</span>
-        <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-popup popup"</span>&gt;</span>
-        <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-search"</span>&gt;</span>
-            <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-search-input-icon"</span>&gt;</span>
-            <span class="tag">&lt;<span class="name">i</span> <span class="attr">class</span>=<span class="string">"fa fa-search"</span>&gt;</span><span class="tag">&lt;/<span class="name">i</span>&gt;</span>
-            <span class="tag">&lt;/<span class="name">div</span>&gt;</span>
-            <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-search-input"</span> <span class="attr">id</span>=<span class="string">"algolia-search-input"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span>
-        <span class="tag">&lt;/<span class="name">div</span>&gt;</span>
-        <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-results"</span>&gt;</span>
-            <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"algolia-stats"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span>
-            <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"algolia-hits"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span>
-            <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"algolia-pagination"</span> <span class="attr">class</span>=<span class="string">"algolia-pagination"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span>
-        <span class="tag">&lt;/<span class="name">div</span>&gt;</span>
-        <span class="tag">&lt;<span class="name">span</span> <span class="attr">class</span>=<span class="string">"popup-btn-close"</span>&gt;</span>
-            <span class="tag">&lt;<span class="name">i</span> <span class="attr">class</span>=<span class="string">"fa fa-times-circle"</span>&gt;</span><span class="tag">&lt;/<span class="name">i</span>&gt;</span>
-        <span class="tag">&lt;/<span class="name">span</span>&gt;</span>
-        <span class="tag">&lt;/<span class="name">div</span>&gt;</span>
-    <span class="tag">&lt;/<span class="name">div</span>&gt;</span>
-<span class="tag">&lt;<span class="name">%</span> } %&gt;</span>
-</code></pre>
+<p>2、添加搜索弹出的model框，同样是themes/Anisina/layout/_partial/nav.ejs，在最下面加上以下代码<br><br><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">%</span> <span class="attr">if</span> (<span class="attr">config.algolia</span>)&#123; %&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"site-search"</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-popup popup"</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-search"</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-search-input-icon"</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">i</span> <span class="attr">class</span>=<span class="string">"fa fa-search"</span>&gt;</span><span class="tag">&lt;/<span class="name">i</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-search-input"</span> <span class="attr">id</span>=<span class="string">"algolia-search-input"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"algolia-results"</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"algolia-stats"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"algolia-hits"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"algolia-pagination"</span> <span class="attr">class</span>=<span class="string">"algolia-pagination"</span>&gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;<span class="name">span</span> <span class="attr">class</span>=<span class="string">"popup-btn-close"</span>&gt;</span></span><br><span class="line">			<span class="tag">&lt;<span class="name">i</span> <span class="attr">class</span>=<span class="string">"fa fa-times-circle"</span>&gt;</span><span class="tag">&lt;/<span class="name">i</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">span</span>&gt;</span></span><br><span class="line">		<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">%</span> &#125; %&gt;</span></span><br></pre></td></tr></table></figure></p>
 <p>3、将下面的js和scc分别添加到<br><br>themes/Anisina/source/js<br><br>themes/Anisina/source/css<br><br>js文件：</p>
 <ul>
 <li><a href="/image/hexo/js/instantsearch.min.txt">instantsearch.min.js</a></li>
@@ -687,15 +666,15 @@ aaa.com
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/01/04/mysql-innoDB-page/" rel="next" title="InnoDB数据页结构详解">
-                <i class="fa fa-chevron-left"></i> InnoDB数据页结构详解
-              </a>
-            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/03/mysql-innoDB-page/" rel="prev" title="InnoDB数据页结构详解">
+                InnoDB数据页结构详解 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -779,7 +758,7 @@ aaa.com
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -801,7 +780,7 @@ aaa.com
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>

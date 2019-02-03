@@ -75,7 +75,7 @@
 
 
 
-  <meta name="keywords" content="教程,">
+  <meta name="keywords" content="mysql,">
 
 
 
@@ -87,10 +87,10 @@
 
 
 <meta name="description" content="前言​    关于数据库我们知道是通过内存对磁盘进行操作的，也知道数据会落实到磁盘上，但是数据在磁盘上的存储结构可能大家还不是很清楚。 ​    MySQL服务器上负责对表中的数据的读取和写入的工作的部分是存储引擎，而关于服务器会支持不同类型的服务器，如：InnoDB、MyISAM、Memory…… ​    不同的存储引擎都是为了实现不同的特性进行开发的，真实数据的存储在不同的存储引擎中存放的格">
-<meta name="keywords" content="教程">
+<meta name="keywords" content="mysql">
 <meta property="og:type" content="article">
 <meta property="og:title" content="InnoDB数据页结构详解">
-<meta property="og:url" content="https://joeysh.top/2019/01/04/mysql-innoDB-page/index.html">
+<meta property="og:url" content="https://joeysh.top/2019/02/03/mysql-innoDB-page/index.html">
 <meta property="og:site_name" content="Joeysh">
 <meta property="og:description" content="前言​    关于数据库我们知道是通过内存对磁盘进行操作的，也知道数据会落实到磁盘上，但是数据在磁盘上的存储结构可能大家还不是很清楚。 ​    MySQL服务器上负责对表中的数据的读取和写入的工作的部分是存储引擎，而关于服务器会支持不同类型的服务器，如：InnoDB、MyISAM、Memory…… ​    不同的存储引擎都是为了实现不同的特性进行开发的，真实数据的存储在不同的存储引擎中存放的格">
 <meta property="og:locale" content="zh-Hans">
@@ -108,7 +108,7 @@
 <meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/page2.jpg">
 <meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/page3.jpg">
 <meta property="og:image" content="https://joeysh.top/image/mysql_InnoDB_page/page4.jpg">
-<meta property="og:updated_time" content="2019-02-03T07:53:17.620Z">
+<meta property="og:updated_time" content="2019-02-03T07:58:09.067Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="InnoDB数据页结构详解">
 <meta name="twitter:description" content="前言​    关于数据库我们知道是通过内存对磁盘进行操作的，也知道数据会落实到磁盘上，但是数据在磁盘上的存储结构可能大家还不是很清楚。 ​    MySQL服务器上负责对表中的数据的读取和写入的工作的部分是存储引擎，而关于服务器会支持不同类型的服务器，如：InnoDB、MyISAM、Memory…… ​    不同的存储引擎都是为了实现不同的特性进行开发的，真实数据的存储在不同的存储引擎中存放的格">
@@ -142,7 +142,7 @@
 
 
 
-  <link rel="canonical" href="https://joeysh.top/2019/01/04/mysql-innoDB-page/">
+  <link rel="canonical" href="https://joeysh.top/2019/02/03/mysql-innoDB-page/">
 
 
 
@@ -313,7 +313,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://joeysh.top/2019/01/04/mysql-innoDB-page/">
+    <link itemprop="mainEntityOfPage" href="https://joeysh.top/2019/02/03/mysql-innoDB-page/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Joeysh">
@@ -342,8 +342,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-04T22:36:53+08:00">
-                2019-01-04
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-03T16:00:00+08:00">
+                2019-02-03
               </time>
             
 
@@ -365,8 +365,8 @@
               
               
                 <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/教程/" itemprop="url" rel="index">
-                    <span itemprop="name">教程</span>
+                  <a href="/categories/mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">mysql</span>
                   </a>
                 </span>
 
@@ -884,7 +884,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/教程/" rel="tag"><i class="fa fa-tag"></i> 教程</a>
+            <a href="/tags/mysql/" rel="tag"><i class="fa fa-tag"></i> mysql</a>
           
         </div>
       
@@ -897,8 +897,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/01/01/mdTest/" rel="next" title="hi 2019">
-                <i class="fa fa-chevron-left"></i> hi 2019
+              <a href="/2019/01/04/hexo/" rel="next" title="使用hexo+Anisina+github搭建个人博客">
+                <i class="fa fa-chevron-left"></i> 使用hexo+Anisina+github搭建个人博客
               </a>
             
           </div>
@@ -906,10 +906,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/01/04/hexo/" rel="prev" title="使用hexo+Anisina+github搭建个人博客">
-                使用hexo+Anisina+github搭建个人博客 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -993,7 +989,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1015,7 +1011,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>

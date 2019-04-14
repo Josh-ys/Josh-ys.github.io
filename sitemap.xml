@@ -2,16 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://joeysh.top/2019/04/14/mysql-transaction&mvcc/</loc>
+    <loc>https://joeysh.top/2019/04/14/mysql-lock/</loc>
     
-    <lastmod>2019-04-14T05:20:08.220Z</lastmod>
+    <lastmod>2019-04-14T05:27:06.658Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://joeysh.top/2019/04/14/mysql-lock/</loc>
+    <loc>https://joeysh.top/2019/04/14/mysql-transaction&mvcc/</loc>
     
-    <lastmod>2019-04-14T05:17:41.688Z</lastmod>
+    <lastmod>2019-04-14T05:20:08.220Z</lastmod>
     
   </url>
   

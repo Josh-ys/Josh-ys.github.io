@@ -94,12 +94,12 @@
 <meta property="og:site_name" content="Joeysh">
 <meta property="og:description" content="前言关于数据库锁，是一个很重要的知识点； 不少人在开发的时候，应该很少会注意到这些锁的问题，也很少会给程序加锁(除了库存这些对数量准确性要求极高的情况下)； 一般也就听过常说的乐观锁和悲观锁，了解过基本的含义之后就没了，没有去实际的操作过，本文将简单的整理一下数据库锁的知识，希望对大家有所帮助； 引入本文参考文章：数据库的两大神器 数据库锁简介在MySQL中锁看起来是很复杂的，因为有一大堆的东西和">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://joeysh.top/image/mysql_lock/1.jpg">
-<meta property="og:updated_time" content="2019-04-14T05:27:06.658Z">
+<meta property="og:image" content="https://joeysh.top/image/mysql_lock/1.png">
+<meta property="og:updated_time" content="2019-04-14T05:31:32.275Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="MySQL锁">
 <meta name="twitter:description" content="前言关于数据库锁，是一个很重要的知识点； 不少人在开发的时候，应该很少会注意到这些锁的问题，也很少会给程序加锁(除了库存这些对数量准确性要求极高的情况下)； 一般也就听过常说的乐观锁和悲观锁，了解过基本的含义之后就没了，没有去实际的操作过，本文将简单的整理一下数据库锁的知识，希望对大家有所帮助； 引入本文参考文章：数据库的两大神器 数据库锁简介在MySQL中锁看起来是很复杂的，因为有一大堆的东西和">
-<meta name="twitter:image" content="https://joeysh.top/image/mysql_lock/1.jpg">
+<meta name="twitter:image" content="https://joeysh.top/image/mysql_lock/1.png">
 
 
 
@@ -430,7 +430,7 @@
 <p>一般也就听过常说的乐观锁和悲观锁，了解过基本的含义之后就没了，没有去实际的操作过，本文将简单的整理一下数据库锁的知识，希望对大家有所帮助；</p>
 <h1 id="引入"><a href="#引入" class="headerlink" title="引入"></a>引入</h1><p>本文参考文章：<a href="https://juejin.im/post/5b55b842f265da0f9e589e79?tdsourcetag=s_pctim_aiomsg#heading-11" target="_blank" rel="noopener">数据库的两大神器</a></p>
 <h1 id="数据库锁"><a href="#数据库锁" class="headerlink" title="数据库锁"></a>数据库锁</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>在MySQL中锁看起来是很复杂的，因为有一大堆的东西和名词：排它锁，共享锁，表锁，页锁，间隙锁，意向排它锁，意向共享锁，行锁，读锁，写锁，乐观锁，悲观锁，死锁。这些名词有的博客又直接写锁的英文的简写—&gt;X锁，S锁，IS锁，IX锁，MMVC等等之类。锁的相关知识又跟存储引擎，索引，事务的隔离级别都是关联的；</p>
-<p><img src="/image/mysql_lock/1.jpg" alt=""></p>
+<p><img src="/image/mysql_lock/1.png" alt=""></p>
 <p>以上的一大堆锁可能很多人都只是知道一些概念，但是我们的程序在一般情况下还是可以跑得好好的。因为这些锁数据库<strong>隐式</strong>帮我们加了：</p>
 <ul>
 <li>对于<code>UPDATE、DELETE、INSERT</code>语句，<strong>InnoDB</strong>会<strong>自动</strong>给涉及数据集加排他锁（X)，也就是我们常说的写锁；</li>
@@ -644,8 +644,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/02/15/mysql-index/" rel="next" title="MySQL索引">
-                <i class="fa fa-chevron-left"></i> MySQL索引
+              <a href="/2019/04/14/mysql-transaction&mvcc/" rel="next" title="事务和MVCC">
+                <i class="fa fa-chevron-left"></i> 事务和MVCC
               </a>
             
           </div>
@@ -653,10 +653,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/04/14/mysql-transaction&mvcc/" rel="prev" title="事务和MVCC">
-                事务和MVCC <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>

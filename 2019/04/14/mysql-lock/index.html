@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/image/header.jpg?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/image/header.jpg?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/image/header.jpg?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/image/header.jpg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="MySQL,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言关于数据库锁，是一个很重要的知识点； 不少人在开发的时候，应该很少会注意到这些锁的问题，也很少会给程序加锁(除了库存这些对数量准确性要求极高的情况下)； 一般也就听过常说的乐观锁和悲观锁，了解过基本的含义之后就没了，没有去实际的操作过，本文将简单的整理一下数据库锁的知识，希望对大家有所帮助； 引入本文参考文章：数据库的两大神器 数据库锁简介在MySQL中锁看起来是很复杂的，因为有一大堆的东西和">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL锁">
+<meta property="og:url" content="https://joeysh.top/2019/04/14/mysql-lock/index.html">
+<meta property="og:site_name" content="Joeysh">
+<meta property="og:description" content="前言关于数据库锁，是一个很重要的知识点； 不少人在开发的时候，应该很少会注意到这些锁的问题，也很少会给程序加锁(除了库存这些对数量准确性要求极高的情况下)； 一般也就听过常说的乐观锁和悲观锁，了解过基本的含义之后就没了，没有去实际的操作过，本文将简单的整理一下数据库锁的知识，希望对大家有所帮助； 引入本文参考文章：数据库的两大神器 数据库锁简介在MySQL中锁看起来是很复杂的，因为有一大堆的东西和">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://joeysh.top/image/mysql_lock/1.jpg">
+<meta property="og:updated_time" content="2019-04-14T05:17:41.688Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL锁">
+<meta name="twitter:description" content="前言关于数据库锁，是一个很重要的知识点； 不少人在开发的时候，应该很少会注意到这些锁的问题，也很少会给程序加锁(除了库存这些对数量准确性要求极高的情况下)； 一般也就听过常说的乐观锁和悲观锁，了解过基本的含义之后就没了，没有去实际的操作过，本文将简单的整理一下数据库锁的知识，希望对大家有所帮助； 引入本文参考文章：数据库的两大神器 数据库锁简介在MySQL中锁看起来是很复杂的，因为有一大堆的东西和">
+<meta name="twitter:image" content="https://joeysh.top/image/mysql_lock/1.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '4G8S3R0MY4',
+      apiKey: 'b6ed6711ef12687155afcc593b3e8aca',
+      indexName: 'blog',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://joeysh.top/2019/04/14/mysql-lock/">
+
+
+
+
+
+  <title>MySQL锁 | Joeysh</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Joeysh</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">个人博客</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  
+  <div class="algolia-popup popup search-popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+  </div>
+
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://joeysh.top/2019/04/14/mysql-lock/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joeysh">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/image/header.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Joeysh">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">MySQL锁</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-14T00:00:00+08:00">
+                2019-04-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/" itemprop="url" rel="index">
+                    <span itemprop="name">MySQL</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv"></span>次
+            </span>
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  4.7k
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  18
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>关于数据库锁，是一个很重要的知识点；</p>
+<p>不少人在开发的时候，应该<strong>很少会注意到</strong>这些锁的问题，也很少会给程序加锁(除了<strong>库存</strong>这些对数量准确性要求极高的情况下)；</p>
+<p>一般也就听过常说的乐观锁和悲观锁，了解过基本的含义之后就没了，没有去实际的操作过，本文将简单的整理一下数据库锁的知识，希望对大家有所帮助；</p>
+<h1 id="引入"><a href="#引入" class="headerlink" title="引入"></a>引入</h1><p>本文参考文章：<a href="https://juejin.im/post/5b55b842f265da0f9e589e79?tdsourcetag=s_pctim_aiomsg#heading-11" target="_blank" rel="noopener">数据库的两大神器</a></p>
+<h1 id="数据库锁"><a href="#数据库锁" class="headerlink" title="数据库锁"></a>数据库锁</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>在MySQL中锁看起来是很复杂的，因为有一大堆的东西和名词：排它锁，共享锁，表锁，页锁，间隙锁，意向排它锁，意向共享锁，行锁，读锁，写锁，乐观锁，悲观锁，死锁。这些名词有的博客又直接写锁的英文的简写—&gt;X锁，S锁，IS锁，IX锁，MMVC等等之类。锁的相关知识又跟存储引擎，索引，事务的隔离级别都是关联的；</p>
+<p><img src="/image/mysql_lock/1.jpg" alt=""></p>
+<p>以上的一大堆锁可能很多人都只是知道一些概念，但是我们的程序在一般情况下还是可以跑得好好的。因为这些锁数据库<strong>隐式</strong>帮我们加了：</p>
+<ul>
+<li>对于<code>UPDATE、DELETE、INSERT</code>语句，<strong>InnoDB</strong>会<strong>自动</strong>给涉及数据集加排他锁（X)，也就是我们常说的写锁；</li>
+<li><strong>MyISAM</strong>在执行查询语句<code>SELECT</code>前，会<strong>自动</strong>给涉及的所有表加<strong>读锁</strong>，在执行更新操作（<code>UPDATE、DELETE、INSERT</code>等）前，会<strong>自动</strong>给涉及的表加<strong>写锁</strong>，这个过程并<strong>不需要用户干预</strong></li>
+</ul>
+<h2 id="表锁和行锁"><a href="#表锁和行锁" class="headerlink" title="表锁和行锁"></a>表锁和行锁</h2><p>从锁的粒度我们可以分为两大类，它们各自的特点如下：</p>
+<ul>
+<li>表锁：开销小，加锁快；不会出现死锁；锁定力度大，发生锁冲突概率高，并发度低；</li>
+<li>行锁：开销大，加锁慢；会出现死锁；锁定力度小，发生锁冲突的概率低，并发度高；</li>
+</ul>
+<p>同样，不同的存储引擎支持的锁的力度也不一样：</p>
+<ul>
+<li>InnoDB：表锁行锁都支持（<strong>InnoDB的行锁是基于索引的</strong> ，稍后会演示）；</li>
+<li>MyISAM：只支持表锁；</li>
+</ul>
+<h3 id="表锁"><a href="#表锁" class="headerlink" title="表锁"></a>表锁</h3><p>表锁也分为两种模式：</p>
+<ul>
+<li>表读锁（Table Read Lock）</li>
+<li>表写锁（Table Write Lock）<ul>
+<li>读读不阻塞：当前用户读取数据，其他用户也在读取数据，不会加锁；</li>
+<li>读写阻塞：当前用户在读取数据的时候，其他用户不能修改当前用户读的数据；</li>
+<li>写写阻塞：当前用户在修改数据，其他用户不能修改当前用户正在修改的数据；</li>
+</ul>
+</li>
+</ul>
+<p>总结得到：</p>
+<ol>
+<li><strong>读读不阻塞，读写阻塞，写写阻塞</strong> ；</li>
+<li><strong>读锁和写锁是互斥的，读写操作是串行</strong> ；</li>
+<li>在mysql里边，<strong>写锁是优先于读锁的</strong> ；</li>
+</ol>
+<h3 id="行锁"><a href="#行锁" class="headerlink" title="行锁"></a>行锁</h3><p>我们使用MySQL一般是使用的InnoDB引擎，上面也提到了InnoDB和MyISAM的一些区别:</p>
+<ul>
+<li>InnoDB行锁表锁都支持，MyISAM只支持表锁；</li>
+<li>InnoDB支持事务，MyISAM不支持；</li>
+</ul>
+<p>InnoDB实现了以下<strong>两种</strong>类型的行锁：</p>
+<ul>
+<li>共享锁（s锁）：允许一个事务去读一行，会阻止其他事务获取相同数据集的排他锁（读取数据的时候不允许修改）<ul>
+<li>也被称为读锁：读锁是共享的，多个线程可以同时读取统一数据集，但是不允许其他线程进行修改（也就是不允许其他事务获取相同数据集的排他锁）；</li>
+</ul>
+</li>
+<li>排他锁（x锁）：允许获取排他锁去做更新操作，阻止其他事务获取相通数据的共享锁和排他锁（一个事务修改数据的时候，阻止其他事务对相同数据集做更新或者查询操作）；<ul>
+<li>也被称为写锁：写锁是排他的，写锁会阻塞其他的写锁和读锁；</li>
+</ul>
+</li>
+</ul>
+<h3 id="意向锁"><a href="#意向锁" class="headerlink" title="意向锁"></a>意向锁</h3><p><strong>为了允许行锁和表锁共存，实现多粒度锁机制</strong>，InnoDB还有两种内部使用的意向锁（Intention Locks），这两种意向锁都是<strong>表锁</strong>：</p>
+<ul>
+<li>意向共享锁（IS）：事务打算给数据行加共享锁，事务在给一个数据行加共享锁前必须先取得该表的IS锁；</li>
+<li>意向排他锁（IX）：事务打算给数据行加排他锁，事务再给一个数据行加排他锁前必须先取得该表的IX锁；</li>
+</ul>
+<p>意向锁也是数据库隐式帮我们做了，<strong>不需要程序员操心</strong>！</p>
+<h3 id="表锁行锁测试"><a href="#表锁行锁测试" class="headerlink" title="表锁行锁测试"></a>表锁行锁测试</h3><h4 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h4><p>上面我们提到了InnoDB支持行锁，但是是基于索引的情况，下面我们来实际的看一下：</p>
+<ul>
+<li><p>首先我们用客户端连接上MySQL数据库，为了测试锁的效果，我们需要打开两个或者两个以上的客户端（我打开了两个）然后创建一个数据库；</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CREATE DATABASE test CHARACTER SET utf8;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后我们需要建立一个表：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE `user` (</span><br><span class="line">  `id` bigint(20) NOT NULL AUTO_INCREMENT,</span><br><span class="line">  `username` varchar(255) NOT NULL,</span><br><span class="line">  `age` int(11) NOT NULL,</span><br><span class="line">  PRIMARY KEY (`id`)</span><br><span class="line">) ENGINE=InnoDB CHARSET=utf8;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>我们简单的建了一个user表，表中有三个字段，其中id为自增主键，大家都知道主键是自带索引的，也就是聚簇索引（主键索引），其他的字段都是不带索引的。</p>
+</li>
+<li><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show tables;</span><br><span class="line">+----------------+</span><br><span class="line">| Tables_in_test |</span><br><span class="line">+----------------+</span><br><span class="line">| user           |</span><br><span class="line">+----------------+</span><br><span class="line">1 row in set (0.01 sec)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>现在我们简单的往里面添加几条数据：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO `user`(username,age) VALUES (&apos;tom&apos;,23),(&apos;joey&apos;,22),(&apos;James&apos;,21),(&apos;William&apos;,20),(&apos;David&apos;,24);</span><br></pre></td></tr></table></figure>
+<ul>
+<li><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select * from user;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  1 | tom      |  23 |</span><br><span class="line">|  2 | joey     |  22 |</span><br><span class="line">|  3 | James    |  21 |</span><br><span class="line">|  4 | William  |  20 |</span><br><span class="line">|  5 | David    |  24 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">5 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h4><p>好的，现在前提都已经弄好了，我们可以开始测试了：</p>
+<p>我们知道MySQL的事务是自动提交的，为了测试，我们需要把事务的自动提交关闭；</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; set  autocommit = 0;</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br></pre></td></tr></table></figure>
+<p>现在我们来查看一下MySQL的事务提交状态：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show VARIABLES like &apos;autocommit&apos;;</span><br><span class="line">+---------------+-------+</span><br><span class="line">| Variable_name | Value |</span><br><span class="line">+---------------+-------+</span><br><span class="line">| autocommit    | OFF   |</span><br><span class="line">+---------------+-------+</span><br><span class="line">1 row in set, 1 warning (0.04 sec)</span><br></pre></td></tr></table></figure>
+<p>从上面可以看出，我们把事务的自动提交已经关闭了，下面我们开始测试（打开的窗口都需要关闭事务的自动提交）；</p>
+<h5 id="行锁测试"><a href="#行锁测试" class="headerlink" title="行锁测试"></a>行锁测试</h5><p>首先，我打开了两个窗口，分别为A和B，现在，我们两个窗口的状态都已经调整完毕（关闭事务自动提交）。我们在A窗口，输入以下语句：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where id = 1 for update;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  1 | tom      |  23 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">1 row in set (0.02 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>很明显，以上语句中，打开了事务，然后执行了一条SQL语句，在select 语句后边加了 <code>for update</code>相当于加了排它锁(写锁)，加了写锁以后，其他的事务就不能对它修改了！需要等待当前事务修改完提交之后才可以修改；</p>
+<p>现在我们在窗口B执行相同的操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where id = 1 for update;</span><br><span class="line"></span><br><span class="line">-</span><br></pre></td></tr></table></figure>
+<p>注意到了吗，窗口B并没有数据出现，因为窗口A执行的时候加了排他锁，但是窗口A并没有提交事务，所以锁也没有得到释放，现在我们在窗口A提交事务：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where id = 1 for update;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  1 | tom      |  23 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">1 row in set (0.02 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; commit;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br></pre></td></tr></table></figure>
+<p>同时，窗口B出现了以下情况：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where id = 1 for update;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  1 | tom      |  23 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">1 row in set (4.34 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>没错，因为窗口A提交了事务，释放的排他锁，所以窗口B获取到了数据并重新为该数据添加了排他锁，所以此时你在A窗口在重复之前操作的时候还是会阻塞，因为窗口B没有提交事务，也就是没有释放排他锁；</p>
+<p>现在，我们在窗口A执行以下语句：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where id = 2 for update;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  2 | joey     |  22 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">1 row in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>有的同学可能会说，不对啊，我窗口B还没有提交事务，释放排他锁啊。</p>
+<p>但是，大家注意看我的SQL语句，这次查的是id = 2的数据；</p>
+<p>这是InnoDB的一大特性，我上面说了，<strong>InnoDB的行锁是基于索引的</strong> ，因为此时我们的条件是基于主键的，而主键是自带索引的，所以加的是行锁，这个时候窗口A锁的是id = 2的这条数据，窗口B锁的是id = 1的这条数据，他们互不干扰；</p>
+<h5 id="表锁测试"><a href="#表锁测试" class="headerlink" title="表锁测试"></a>表锁测试</h5><p>现在，我们再来测试一下，没有索引，走表锁的情况；</p>
+<p>我们上面有提过，InnoDB的行锁是基于索引，没有索引的话，锁住的就是整张表：</p>
+<p>我们在窗口A输入执行以下操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where age = 20 for update;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  4 | William  |  20 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">1 row in set (0.04 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>大家注意，这次的条件是使用的age，但是age是没有索引的，所以我们在B窗口执行相同的操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where age = 20 for update;</span><br><span class="line">-</span><br></pre></td></tr></table></figure>
+<p>很清楚的能看到，窗口B处于阻塞状态，我们换个条件继续执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where age = 22 for update;</span><br><span class="line">-</span><br></pre></td></tr></table></figure>
+<p>同样，尽管查询的数据换成了age = 22，但是还是会阻塞住，也就证明看不是锁的行；</p>
+<p>我们再来试试换一个列作为条件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where id = 1 for update;</span><br><span class="line">-</span><br></pre></td></tr></table></figure>
+<p>同样的结果，我们现在在A窗口提交事务，再来看一下B窗口：</p>
+<p>A：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where age = 20 for update;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  4 | William  |  20 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">1 row in set (0.04 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; commit;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br></pre></td></tr></table></figure>
+<p>B：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where id = 1 for update;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  1 | tom      |  23 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">1 row in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>当窗口A提交事务后，也就释放了锁，这个时候窗口B获取到了锁，得到了数据，并锁住了id = 1的这一行数据；</p>
+<h5 id="联合索引测试"><a href="#联合索引测试" class="headerlink" title="联合索引测试"></a>联合索引测试</h5><p>关于联合索引中，需要注意的一点就是<strong>最左匹配原则</strong> ，说白了就是查询是否走了索引，如果走了索引，同样加的还是行锁，否则锁的还是表，下面我们来看一下。首先，我们需要把表中的username和age建一个联合索引：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; create index index_username_age on user(username,age);</span><br><span class="line">Query OK, 0 rows affected (0.04 sec)</span><br><span class="line">Records: 0  Duplicates: 0  Warnings: 0</span><br><span class="line"></span><br><span class="line">mysql&gt; show index from user;</span><br><span class="line">+-------+------------+--------------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+</span><br><span class="line">| Table | Non_unique | Key_name           | Seq_in_index | Column_name | Collation | Cardinality | Sub_part | Packed | Null | Index_type | Comment | Index_comment |</span><br><span class="line">+-------+------------+--------------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+</span><br><span class="line">| user  |          0 | PRIMARY            |            1 | id          | A         |           5 |     NULL | NULL   |      | BTREE      |         |               |</span><br><span class="line">| user  |          1 | index_username_age |            1 | username    | A         |           4 |     NULL | NULL   |      | BTREE      |         |               |</span><br><span class="line">| user  |          1 | index_username_age |            2 | age         | A         |           5 |     NULL | NULL   |      | BTREE      |         |               |</span><br><span class="line">+-------+------------+--------------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+</span><br><span class="line">3 rows in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>上面可以看出，我们建立联合索引成功，下面我们开始测试，首先，我们在窗口A执行以下操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from user where username=&apos;tom&apos; and age = 20 for update;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  1 | tom      |  20 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">1 row in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>可以看出，和我们之前的操作没啥两样，同样是打开事务进行操作，现在我们在窗口B执行以下操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;  select * from user where username=&apos;tom&apos; and age = 20 for update;</span><br><span class="line">-</span><br></pre></td></tr></table></figure>
+<p>很清楚的看到B窗口被锁住了，但是我们现在确定的是加的锁，并不知道是行锁还是表锁，没关系，我们换个条件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; begin;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;  select * from user where username=&apos;joey&apos; and age = 22 for update;</span><br><span class="line">+----+----------+-----+</span><br><span class="line">| id | username | age |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">|  2 | joey     |  22 |</span><br><span class="line">+----+----------+-----+</span><br><span class="line">1 row in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt;</span><br></pre></td></tr></table></figure>
+<p>这样，我们很清楚的就能看到走的是行锁了。</p>
+<p>只不过大家要注意联合索引的命中规则也就是最左匹配原则，我们可以试一试单独使用username作为条件看看走的什么锁，也可以看看单独使用age走的什么锁，这里就不再演示了，大家可以自行的尝试。</p>
+<h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><p>前提：必须在事务里面</p>
+<p>样例：select * from table where column = condition for update;</p>
+<p>结果：</p>
+<ul>
+<li>当coulmn是索引列的时候，也就是查询走的索引的时候，这个时候锁的就是行（行锁）；</li>
+<li>当coulmn不是索引的时候，也就是查询没走索引的时候，这个时候锁的就是整个表（表锁）；</li>
+</ul>
+<h2 id="悲观锁"><a href="#悲观锁" class="headerlink" title="悲观锁"></a>悲观锁</h2><h3 id="含义"><a href="#含义" class="headerlink" title="含义"></a>含义</h3><p>悲观锁是从数据库层面加锁。总是假设最坏的情况，每次去拿数据的时候都认为别人会修改，所以每次在拿数据的时候都会上锁，这样别人想拿这个数据就会阻塞直到它释放锁；</p>
+<h3 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h3><p>上面其实关于行锁和表锁的测试那里我们使用的排他锁也就是悲观锁；</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from table where xxx  for update</span><br></pre></td></tr></table></figure>
+<p>在上面我们举的例子够多了，这里不再多说；</p>
+<h2 id="乐观锁"><a href="#乐观锁" class="headerlink" title="乐观锁"></a>乐观锁</h2><h3 id="含义-1"><a href="#含义-1" class="headerlink" title="含义"></a>含义</h3><p>总是假设最好的情况，每次去拿数据的时候都认为别人不会修改，所以不会上锁，但是在更新的时候会判断一下在此期间别人有没有去更新这个数据；</p>
+<h3 id="例子-1"><a href="#例子-1" class="headerlink" title="例子"></a>例子</h3><p>表中有一个版本字段，第一次读的时候，获取到这个字段。处理完业务逻辑开始更新的时候，需要再次查看该字段的值是否和第一次的一样。如果一样就更新，反之拒绝。之所以叫乐观，因为这个模式没有从数据库加锁，等到更新的时候再判断是否可以更新。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">update table set xxx where id = 1 and version =  1;</span><br></pre></td></tr></table></figure>
+<p>上面的语句就很清楚的说明了乐观锁，在对id = 1的数据进行更新的同时添加了version = 1的条件，version是当前事务开始之前查询出来的版本号，如果这个时候其他事务对id = 1的数据进行了更新会将version+1，所以如果其他事务进行了更新，这条语句是执行不成功的；</p>
+<p>参考文章：<a href="https://juejin.im/post/5b4977ae5188251b146b2fc8" target="_blank" rel="noopener">https://juejin.im/post/5b4977ae5188251b146b2fc8</a></p>
+<h2 id="间隙锁GAP"><a href="#间隙锁GAP" class="headerlink" title="间隙锁GAP"></a>间隙锁GAP</h2><p>当我们<strong>用范围条件检索数据</strong>而不是相等条件检索数据，并请求共享或排他锁时，InnoDB会给<strong>符合范围条件的已有数据记录的索引项加锁</strong>；对于键值在条件范围内但并不存在的记录，叫做“间隙（GAP)”。InnoDB也会对这个“间隙”加锁，这种锁机制就是所谓的间隙锁。</p>
+<p>值得注意的是：间隙锁只会在<code>Repeatable read</code>隔离级别下使用~</p>
+<p>例子：假如emp表中只有101条记录，其empid的值分别是1,2,…,100,101</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Select * from  emp where empid &gt; 100 for update;</span><br></pre></td></tr></table></figure>
+<p>上面是一个范围查询，InnoDB<strong>不仅</strong>会对符合条件的empid值为101的记录加锁，也会对<strong>empid大于101（这些记录并不存在）的“间隙”加锁</strong>。</p>
+<p>InnoDB使用间隙锁的目的有两个：</p>
+<ul>
+<li><strong>为了防止幻读</strong>(上面也说了，<code>Repeatable read</code>隔离级别下再通过GAP锁即可避免了幻读)</li>
+<li>满足恢复和复制的需要<ul>
+<li>MySQL的恢复机制要求：<strong>在一个事务未提交前，其他并发事务不能插入满足其锁定条件的任何记录，也就是不允许出现幻读</strong> ；</li>
+</ul>
+</li>
+</ul>
+<h2 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h2><p>并发的问题就少不了死锁，在MySQL中同样会存在死锁的问题。</p>
+<p>但一般来说MySQL通过回滚帮我们解决了不少死锁的问题了，但死锁是无法完全避免的，可以通过以下的经验参考，来尽可能少遇到死锁：</p>
+<ul>
+<li>1）以<strong>固定的顺序</strong>访问表和行。比如对两个job批量更新的情形，简单方法是对id列表先排序，后执行，这样就避免了交叉等待锁的情形；将两个事务的sql顺序调整为一致，也能避免死锁。</li>
+<li>2）<strong>大事务拆小</strong>。大事务更倾向于死锁，如果业务允许，将大事务拆小。</li>
+<li>3）在同一个事务中，尽可能做到<strong>一次锁定</strong>所需要的所有资源，减少死锁概率。</li>
+<li>4）<strong>降低隔离级别</strong>。如果业务允许，将隔离级别调低也是较好的选择，比如将隔离级别从RR调整为RC，可以避免掉很多因为gap锁造成的死锁。</li>
+<li>5）<strong>为表添加合理的索引</strong>。可以看到如果不走索引将会为表的每一行记录添加上锁，死锁的概率大大增大。</li>
+</ul>
+<h1 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h1><p>本文介绍了MySQL数据锁以及事务的一些知识点，下面我们来总结一下；</p>
+<p>不同的存储引擎支持的锁的力度也不一样：</p>
+<ul>
+<li>InnoDB：表锁行锁都支持（也做了演示）；<ul>
+<li>当查询走的索引的时候，这个时候锁的就是行；</li>
+<li>当查询没走的索引的时候，这个时候锁的就是表；</li>
+</ul>
+</li>
+<li>MyISAM：只支持表锁；</li>
+</ul>
+<p>数据库锁从锁的粒度我们可以分为两大类，它们各自的特点如下：：</p>
+<ul>
+<li>表锁：开销小，加锁快；不会出现死锁；锁定力度大，发生锁冲突概率高，并发度低；</li>
+<li>行锁：开销大，加锁慢；会出现死锁；锁定力度小，发生锁冲突的概率低，并发度高；</li>
+</ul>
+<p>悲观锁：总是假设最好的情况，每次去拿数据的时候都认为别人不会修改，所以不会上锁，但是在更新的时候会判断一下在此期间别人有没有去更新这个数据；</p>
+<p>乐观锁：总是假设最好的情况，每次去拿数据的时候都认为别人不会修改，所以不会上锁，但是在更新的时候会判断一下在此期间别人有没有去更新这个数据；</p>
+<h1 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h1><p>最后说一下，本文的参考文章：<a href="https://juejin.im/post/5b55b842f265da0f9e589e79?tdsourcetag=s_pctim_aiomsg#heading-11" target="_blank" rel="noopener">数据库的两大神器</a> </p>
+<p>大家可以去看一下原文，本人也是小菜鸡一枚，说的有问题还望大家指出来；</p>
+<p>大家共同学习，一起进步。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/MySQL/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/14/mysql-transaction&mvcc/" rel="next" title="事务和MVCC">
+                <i class="fa fa-chevron-left"></i> 事务和MVCC
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="lv-container" data-id="city" data-uid="MTAyMC80MTg4OS8xODQzNQ"></div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/image/header.jpg" alt="Joeysh">
+            
+              <p class="site-author-name" itemprop="name">Joeysh</p>
+              <p class="site-description motion-element" itemprop="description">有志者自有千计万计，<br>无志者只感千难万难。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/Joeyangsh" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/4c825155dac8" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-blogger-b"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://juejin.im/user/5b854099f265da433874ee02" target="_blank" title="掘金">
+                      
+                        <i class="fa fa-fw fa-blogger-b"></i>掘金</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#引入"><span class="nav-number">2.</span> <span class="nav-text">引入</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#数据库锁"><span class="nav-number">3.</span> <span class="nav-text">数据库锁</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#简介"><span class="nav-number">3.1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#表锁和行锁"><span class="nav-number">3.2.</span> <span class="nav-text">表锁和行锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#表锁"><span class="nav-number">3.2.1.</span> <span class="nav-text">表锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#行锁"><span class="nav-number">3.2.2.</span> <span class="nav-text">行锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#意向锁"><span class="nav-number">3.2.3.</span> <span class="nav-text">意向锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#表锁行锁测试"><span class="nav-number">3.2.4.</span> <span class="nav-text">表锁行锁测试</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#准备"><span class="nav-number">3.2.4.1.</span> <span class="nav-text">准备</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#测试"><span class="nav-number">3.2.4.2.</span> <span class="nav-text">测试</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#行锁测试"><span class="nav-number">3.2.4.2.1.</span> <span class="nav-text">行锁测试</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#表锁测试"><span class="nav-number">3.2.4.2.2.</span> <span class="nav-text">表锁测试</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#联合索引测试"><span class="nav-number">3.2.4.2.3.</span> <span class="nav-text">联合索引测试</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#总结"><span class="nav-number">3.2.4.2.4.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#悲观锁"><span class="nav-number">3.3.</span> <span class="nav-text">悲观锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#含义"><span class="nav-number">3.3.1.</span> <span class="nav-text">含义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#例子"><span class="nav-number">3.3.2.</span> <span class="nav-text">例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#乐观锁"><span class="nav-number">3.4.</span> <span class="nav-text">乐观锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#含义-1"><span class="nav-number">3.4.1.</span> <span class="nav-text">含义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#例子-1"><span class="nav-number">3.4.2.</span> <span class="nav-text">例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#间隙锁GAP"><span class="nav-number">3.5.</span> <span class="nav-text">间隙锁GAP</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#死锁"><span class="nav-number">3.6.</span> <span class="nav-text">死锁</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结-1"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#最后"><span class="nav-number">5.</span> <span class="nav-text">最后</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Joeysh</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+    <script type="text/javascript">
+      (function(d, s) {
+        var j, e = d.getElementsByTagName(s)[0];
+        if (typeof LivereTower === 'function') { return; }
+        j = d.createElement(s);
+        j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+        j.async = true;
+        e.parentNode.insertBefore(j, e);
+      })(document, 'script');
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  
+  
+  <link rel="stylesheet" href="/lib/algolia-instant-search/instantsearch.min.css">
+
+  
+  
+  <script src="/lib/algolia-instant-search/instantsearch.min.js"></script>
+  
+
+  <script src="/js/src/algolia-search.js?v=5.1.4"></script>
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+  <script type="text/javascript" src="/js/src/js.cookie.js?v=5.1.4"></script>
+  <script type="text/javascript" src="/js/src/scroll-cookie.js?v=5.1.4"></script>
+
+
+  
+
+</body>
+</html>

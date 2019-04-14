@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/image/header.jpg?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/image/header.jpg?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/image/header.jpg?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/image/header.jpg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="MySQL,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言关于事务，是一个很重要的知识点，大家在面试中也会被经常问到这个问题； 数据库事务有不同的隔离级别，不同的隔离级别对锁的使用是不同的，锁的应用最终导致不同事务的隔离级别 ；在上一篇文章中我们说到了数据库锁的一部分知识，知道了InnoDB是支持行锁的，但是走行锁是基于索引的； 这里我们会说一下和锁紧密相关的事务； 希望本文对大家有所帮助； 引入本文参考文章：数据库的两大神器 事务和MVCC数据库事">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="事务和MVCC">
+<meta property="og:url" content="https://joeysh.top/2019/04/14/mysql-transaction&mvcc/index.html">
+<meta property="og:site_name" content="Joeysh">
+<meta property="og:description" content="前言关于事务，是一个很重要的知识点，大家在面试中也会被经常问到这个问题； 数据库事务有不同的隔离级别，不同的隔离级别对锁的使用是不同的，锁的应用最终导致不同事务的隔离级别 ；在上一篇文章中我们说到了数据库锁的一部分知识，知道了InnoDB是支持行锁的，但是走行锁是基于索引的； 这里我们会说一下和锁紧密相关的事务； 希望本文对大家有所帮助； 引入本文参考文章：数据库的两大神器 事务和MVCC数据库事">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-04-14T05:20:08.220Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="事务和MVCC">
+<meta name="twitter:description" content="前言关于事务，是一个很重要的知识点，大家在面试中也会被经常问到这个问题； 数据库事务有不同的隔离级别，不同的隔离级别对锁的使用是不同的，锁的应用最终导致不同事务的隔离级别 ；在上一篇文章中我们说到了数据库锁的一部分知识，知道了InnoDB是支持行锁的，但是走行锁是基于索引的； 这里我们会说一下和锁紧密相关的事务； 希望本文对大家有所帮助； 引入本文参考文章：数据库的两大神器 事务和MVCC数据库事">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '4G8S3R0MY4',
+      apiKey: 'b6ed6711ef12687155afcc593b3e8aca',
+      indexName: 'blog',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://joeysh.top/2019/04/14/mysql-transaction&mvcc/">
+
+
+
+
+
+  <title>事务和MVCC | Joeysh</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Joeysh</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">个人博客</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  
+  <div class="algolia-popup popup search-popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+  </div>
+
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://joeysh.top/2019/04/14/mysql-transaction&mvcc/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Joeysh">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/image/header.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Joeysh">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">事务和MVCC</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-14T00:00:00+08:00">
+                2019-04-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/" itemprop="url" rel="index">
+                    <span itemprop="name">MySQL</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv"></span>次
+            </span>
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计">
+                  4k
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                  14
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>关于事务，是一个很重要的知识点，大家在面试中也会被经常问到这个问题；</p>
+<p>数据库事务有不同的隔离级别，不同的隔离级别对锁的使用是不同的，<strong>锁的应用最终导致不同事务的隔离级别 </strong>；在上一篇文章中我们说到了数据库锁的一部分知识，知道了InnoDB是支持行锁的，但是走行锁是基于索引的；</p>
+<p>这里我们会说一下和锁紧密相关的事务；</p>
+<p>希望本文对大家有所帮助；</p>
+<h1 id="引入"><a href="#引入" class="headerlink" title="引入"></a>引入</h1><p>本文参考文章：<a href="https://juejin.im/post/5b55b842f265da0f9e589e79?tdsourcetag=s_pctim_aiomsg#heading-11" target="_blank" rel="noopener">数据库的两大神器</a></p>
+<h1 id="事务和MVCC"><a href="#事务和MVCC" class="headerlink" title="事务和MVCC"></a>事务和MVCC</h1><p>数据库事务有不同的隔离级别，不同的隔离级别对锁的使用是不同的，<strong>锁的应用最终导致不同事务的隔离级别 </strong>；</p>
+<p>关于事务，大家也是比较熟悉的，在这里我们再来唠叨一下：</p>
+<p>说到事务，就不得不提它的特性以及隔离级别了；</p>
+<h2 id="特性"><a href="#特性" class="headerlink" title="特性"></a>特性</h2><p>事务具有四个特性：原子性、一致性、隔离性、持久性。这四个属性通常被称为ACID属性。</p>
+<ul>
+<li><strong>原子性（Atomicity）</strong> ：事务作为一个整体被执行，包含在其中的对数据库的操作要么全部被执行，要么都不执行。</li>
+<li><strong>一致性（Consistency）</strong>：事务应确保数据库的状态从一个一致状态转变为另一个一致状态。一致状态的含义是数据库中的数据应满足完整性约束。</li>
+<li><strong>隔离性（Isolation）</strong>：多个事务并发执行时，一个事务的执行不应影响其他事务的执行。</li>
+<li><strong>持久性（Durability）</strong>：一个事务一旦提交，他对数据库的修改应该永久保存在数据库中。</li>
+</ul>
+<p>对于以上的四个特性，我们来拿经典的转账的例子来说明；</p>
+<p>有A和B两个人，现在A需要往B的账户上转钱，一般的操作是这样：</p>
+<ol>
+<li>A账户需要读取账户余额（500）；</li>
+<li>A需要给B转账100元，所以需要从A的账户上扣除100元（500 - 100）；</li>
+<li>把减去的结果写回A账户（400）；</li>
+<li>B账户需要读取账户余额（500）；</li>
+<li>对B账户进行加的操作（500 + 100）；</li>
+<li>把结果写回B账户（600）；</li>
+</ol>
+<p>以上是转账的操作步骤，我们来说明一下事务的四大特性：</p>
+<h3 id="原子性"><a href="#原子性" class="headerlink" title="原子性"></a>原子性</h3><p>以上的六步操作要么全部执行，要么全部不执行。不管执行到那一步出现了问题，就需要执行回滚操作； </p>
+<h3 id="一致性"><a href="#一致性" class="headerlink" title="一致性"></a>一致性</h3><p>在转账之前，A和B的账户加一起500 + 500 = 1000 元，在转账之后A和B的账户加起来是400 + 600 = 1000。也就是说，数据的状态在执行该事务操作之后从一个状态改变到了另外一个状态，需要保持一致性；</p>
+<h3 id="隔离性"><a href="#隔离性" class="headerlink" title="隔离性"></a>隔离性</h3><p>在A向B转账的过程中，只要所处事务还没有提交，其他事务查询A或者B账户的时候，两个账户的金额都不会发生变化；</p>
+<p>如果在A给B转账的同时，有另外一个事务执行了C给B转账的操作，那么当两个事务都结束的时候，B账户里面的钱应该是A转给B的钱加上C转给B的钱再加上自己原有的钱；</p>
+<h3 id="持久性"><a href="#持久性" class="headerlink" title="持久性"></a>持久性</h3><p>一旦转账成功，事务提交，所做的修改就会永久的保存；</p>
+<p>参考文章：<a href="https://www.hollischuang.com/archives/898" target="_blank" rel="noopener">https://www.hollischuang.com/archives/898</a></p>
+<h2 id="隔离级别"><a href="#隔离级别" class="headerlink" title="隔离级别"></a>隔离级别</h2><p>我们对于事务的隔离级别也是很清楚的，分为四种：</p>
+<ul>
+<li>Read uncommitted：未提交读<ul>
+<li>最低级别，会出现脏读、不可重复读、幻读。</li>
+</ul>
+</li>
+<li>Read committed：已提交读<ul>
+<li>避免脏读，会出现不可重复读和幻读。</li>
+</ul>
+</li>
+<li>Repeatable read：可重复读<ul>
+<li>避免脏读和不可重复读，会出现幻读（在MySQL实现的Repeatable read配合gap锁不会出现幻读！）。</li>
+</ul>
+</li>
+<li>Serializable ：串行化<ul>
+<li>避免脏读、不可重复读、幻读。</li>
+</ul>
+</li>
+</ul>
+<h3 id="脏读"><a href="#脏读" class="headerlink" title="脏读"></a>脏读</h3><p>在Read uncommitted隔离级别下会出现脏读，我们先来看一下脏读；</p>
+<p>脏读：一个事务读取到另一个事务未提交的数据的情况被称为脏读。</p>
+<p>举例说明：</p>
+<p>还是拿转账的例子作为说明。A向B转账，<strong>A执行了转账语句，但A还没有提交事务，B读取数据，发现自己账户钱变多了</strong>！B跟A说，我已经收到钱了。A回滚事务【rollback】，等B再查看账户的钱时，发现钱并没有多。</p>
+<p>分析：</p>
+<p>出现脏读的本质就是因为<strong>操作(修改)完该数据就立马释放掉锁</strong>，导致读的数据就变成了无用的或者是<strong>错误的数据</strong>。</p>
+<p>解决（Read committed）：</p>
+<p>从上面的分析也能看出来，解决的方式就是把<strong>锁释放的位置放到事务提交之后</strong> 。这样的话，在事务还未提交之前，其他的事务对该数据是无法进行操作的，这也是<code>Read committed</code><strong>避免脏读</strong>的做法；</p>
+<h3 id="不可重复读"><a href="#不可重复读" class="headerlink" title="不可重复读"></a>不可重复读</h3><p><code>Read committed</code> 虽然避免了脏读但是会出现不可重复读；</p>
+<p>不可重复读：<strong>一个事务读取到另外一个事务已经提交的数据，也就是说一个事务可以看到其他事务所做的修改</strong> ;</p>
+<p>举例说明：</p>
+<p>事务A在读取一条数据，得到结果a，事务B把这条数据改成了b并提交了事务，这个时候事务A再次去读取这条数据，得到的结果是b。这样就发生了不可重复读；</p>
+<p>分析：</p>
+<p><code>Read committed</code> 采用的是<strong>语句级别</strong>的快照！<strong>每次读取的都是当前最新的版本</strong>！</p>
+<p>解决：</p>
+<p><code>Repeatable read</code>避免不可重复读是<strong>事务级别</strong>的快照！每次读取的都是当前事务的版本，即使被修改了，也只会读取当前事务版本的数据。</p>
+<p>这里涉及到了快照一词，我们需要说一下这个东西：</p>
+<h3 id="MVCC"><a href="#MVCC" class="headerlink" title="MVCC"></a>MVCC</h3><p><strong>MVCC(Multi-Version Concurrency Control)：多版本并发控制</strong> 。通过一定机制生成一个数据请求<strong>时间点的一致性数据快照（Snapshot)</strong>，并用这个快照来提供一定级别（<strong>语句级或事务级</strong>）的<strong>一致性读取</strong>。从用户的角度来看，好像是<strong>数据库可以提供同一数据的多个版本</strong>。一句话总结就是 <strong>同一份数据临时保留多版本的一种方式，进而实现并发控制</strong> ；</p>
+<p>快照有<strong>两个级别</strong>：</p>
+<ul>
+<li>语句级<ul>
+<li>针对于<code>Read committed</code>隔离级别</li>
+</ul>
+</li>
+<li>事务级别<ul>
+<li>针对于<code>Repeatable read</code>隔离级别</li>
+</ul>
+</li>
+</ul>
+<h4 id="InnoDB-MVCC实现分析"><a href="#InnoDB-MVCC实现分析" class="headerlink" title="InnoDB MVCC实现分析"></a>InnoDB MVCC实现分析</h4><p>InnoDB 的 MVCC, 是通过在每行记录后面保存<strong>两个隐藏的列</strong>来实现的, 这两个列，分别保存了这个行的创建时间，一个保存的是行的删除时间。这里存储的并不是实际的时间值, 而是系统版本号 (可以理解为事务的 ID)，<strong>每次开始一个新的事务，系统版本号就会<font color="red">自动递增</font></strong>；<strong>当删除一条数据的时候，该数据的删除时间列就会存上当前事务的版本号</strong> ；事务开始时刻的系统版本号会作为事务的 ID；</p>
+<p>下面看一下在 REPEATABLE READ 隔离级别下, MVCC 具体是如何操作的；</p>
+<h4 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h4><p>首先创建一个表：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE `mvcc` (</span><br><span class="line">  `id` bigint(20) NOT NULL AUTO_INCREMENT,</span><br><span class="line">  `username` varchar(255) NOT NULL,</span><br><span class="line">  PRIMARY KEY (`id`)</span><br><span class="line">) ENGINE=InnoDB CHARSET=utf8;</span><br></pre></td></tr></table></figure>
+<p>假设系统版本号从1开始；</p>
+<h5 id="INSERT"><a href="#INSERT" class="headerlink" title="INSERT"></a>INSERT</h5><p>InnoDB 为新插入的每一行保存当前系统版本号作为版本号，上面我们假设系统版本号从1开始；</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">start transaction;</span><br><span class="line">INSERT INTO `mvcc`(username) VALUES (&apos;tom&apos;),(&apos;joey&apos;),(&apos;James&apos;);</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+<p>得到如下结果（后面两列是隐藏的，通过查询语句看不到）：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">id</th>
+<th style="text-align:center">username</th>
+<th style="text-align:center">创建时间 (事务 ID)</th>
+<th style="text-align:center">删除时间 (事务 ID)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">tom</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">joey</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">james</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+</tbody>
+</table>
+<h5 id="SELECT"><a href="#SELECT" class="headerlink" title="SELECT"></a>SELECT</h5><p>InnoDB会根据以下两个条件检查每条记录：</p>
+<ul>
+<li>InnoDB只会查找版本早于当前事务版本的数据行（创建时间系统版本号小于或等于当前事务版本号），这样可以确保事务读取到的数据要么是本次事务开始之前就已经存在的，要么是当前事务本身做的修改；</li>
+<li>行的删除版本要么是未定义，要么大于当前事务的版本号，这样确保了事务读取到的行，在事务开始之前未被删除；</li>
+</ul>
+<p>以上两个条件同时满足的情况下，才能作为结果返回；</p>
+<h5 id="DELETE"><a href="#DELETE" class="headerlink" title="DELETE"></a>DELETE</h5><p>InnoDB 会为删除的每一行保存当前系统的版本号 (事务的 ID) 作为删除标识；</p>
+<p> 具体例子：</p>
+<p>第二个事务，系统版本号为2；</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">start transaction;</span><br><span class="line">select * from mvcc; //step 1</span><br><span class="line">select * from mvcc; //step 2</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+<p>情况一</p>
+<p>第三个事务，系统版本号为3；</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">start transaction;</span><br><span class="line">INSERT INTO `mvcc`(username) VALUES (&apos;yang&apos;);</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+<p>当我们执行step 1刚完毕，这个时候第三个事务往表中插入了一条数据，这个时候表中的数据如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">id</th>
+<th style="text-align:center">username</th>
+<th style="text-align:center">创建时间 (事务 ID)</th>
+<th style="text-align:center">删除时间 (事务 ID)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">tom</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">joey</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">james</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">4</td>
+<td style="text-align:center">yang</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">undefined</td>
+</tr>
+</tbody>
+</table>
+<p>然后step 2执行了，得到如下结果：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">id</th>
+<th style="text-align:center">username</th>
+<th style="text-align:center">创建时间 (事务 ID)</th>
+<th style="text-align:center">删除时间 (事务 ID)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">tom</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">joey</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">james</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+</tbody>
+</table>
+<p>大家可能会感到迷惑，第三个事务不是往里面插入了一条数据吗，怎么查不到。这个时候我们来说一下原因：</p>
+<ul>
+<li>id = 4是由事务三（系统版本为3）创建的，该数据的创建时间（事务ID）为3；</li>
+<li>第二个事务的系统版本号是2，大家要记得我们上面说的查询的两个条件；<ul>
+<li>InnoDB只会查找创建时间（事务ID）小于或等于当前事务的数据行；</li>
+<li>查找删除时间（事务ID）列大于当前系统版本号的数据行；</li>
+</ul>
+</li>
+<li>id = 4的数据的创建时间（事务ID）明显大于第二个事务的系统版本号，而且删除时间也是未定义的，所以第三个事务插入的数据未被检索；</li>
+</ul>
+<p>情况二</p>
+<p>第四个事务，系统版本为4：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">start transaction;  </span><br><span class="line">delete from mvcc where id=1;</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+<p>当第二个事务执行了step 1，这个时候第三个事务的插入也执行完毕了，接着事务四开始执行，此时数据库的数据如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">id</th>
+<th style="text-align:center">username</th>
+<th style="text-align:center">创建时间 (事务 ID)</th>
+<th style="text-align:center">删除时间 (事务 ID)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">tom</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">4</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">joey</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">james</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">4</td>
+<td style="text-align:center">yang</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">undefined</td>
+</tr>
+</tbody>
+</table>
+<p>上面可以看出，当执行DELETE操作的时候，删除时间（事务ID）列会存上当前事务的系统版本号；</p>
+<p>然后step 2执行了，得到如下结果：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">id</th>
+<th style="text-align:center">username</th>
+<th style="text-align:center">创建时间 (事务 ID)</th>
+<th style="text-align:center">删除时间 (事务 ID)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">tom</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">4</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">joey</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">james</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+</tbody>
+</table>
+<p>具体原因我就不说了（SELECT查询的两个条件）；</p>
+<h5 id="UPDATE"><a href="#UPDATE" class="headerlink" title="UPDATE"></a>UPDATE</h5><p>InnoDB 执行 UPDATE,<strong>实际上是<font color="red">新插入的一行数据</font> ，并保存其创建时间（事务ID）为当前事务的系统版本号，同时保存当前事务系统版本号到需要UPDATE的行的删除时间(事务ID）</strong> ；</p>
+<p>情况三</p>
+<p>第五个事务，系统版本号为5：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">start transaction;</span><br><span class="line">update mvcc set name=&apos;jack&apos; where id = 3;</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+<p>当执行完step 1，第三个的插入和第四个事务的删除都执行完毕并且提交，又有一个用户执行了第五个事务的更新操作，这个时候，数据库数据如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">id</th>
+<th style="text-align:center">username</th>
+<th style="text-align:center">创建时间 (事务 ID)</th>
+<th style="text-align:center">删除时间 (事务 ID)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">tom</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">4</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">joey</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">james</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center"><font color="red">5</font></td>
+</tr>
+<tr>
+<td style="text-align:center">4</td>
+<td style="text-align:center">yang</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">jack</td>
+<td style="text-align:center"><font color="red">5</font></td>
+<td style="text-align:center">undefined</td>
+</tr>
+</tbody>
+</table>
+<p>然后我们执行step 2得到如下数据：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">id</th>
+<th style="text-align:center">username</th>
+<th style="text-align:center">创建时间 (事务 ID)</th>
+<th style="text-align:center">删除时间 (事务 ID)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">tom</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">4</td>
+</tr>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">joey</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">undefined</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">james</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">5</td>
+</tr>
+</tbody>
+</table>
+<p>以上几种情况可以看出，不管咋样，查出的数据都是和第一次查询的数据一致，尽管其他事务做了各种修改操作，但是没有影响到第二个事务中的查询操作；</p>
+<p>通过以上对MVCC的介绍，我想大家也明白了<code>Repeatable read</code>避免不可重复读的方式；</p>
+<p>参考文章：<a href="https://blog.csdn.net/whoamiyang/article/details/51901888" target="_blank" rel="noopener">https://blog.csdn.net/whoamiyang/article/details/51901888</a></p>
+<h3 id="幻读"><a href="#幻读" class="headerlink" title="幻读"></a>幻读</h3><p>幻读：<strong>是指在一个事务内读取到了别的事务插入的数据，导致前后读取不一致</strong> （幻读是事务非独立执行时发生的一种现象）；</p>
+<p>举例说明：</p>
+<p>例如事务A对一个表中符合条件的一些数据做了从a修改为b的操作，这时事务B又对这个表中插入了符合A修改条件的一行数据项，而这个数据项的数值还是为a并且提交给数据库。而操作事务A的用户如果再查看刚刚修改的数据，会发现还有一行没有修改，其实这行是从事务B中添加的，就好像产生幻觉一样，这就是发生了幻读。</p>
+<p>解决：</p>
+<p>但在MySQL实现的Repeatable read配合间隙锁不会出现幻读；</p>
+<p>使用间隙锁锁住符合条件的部分，不允许插入符合条件的数据。</p>
+<h4 id="间隙锁"><a href="#间隙锁" class="headerlink" title="间隙锁"></a>间隙锁</h4><p>间隙锁：当我们<strong>用范围条件检索数据</strong>而不是相等条件检索数据，并请求共享或排他锁时，InnoDB会给<strong>符合范围条件的已有数据记录的索引项加锁</strong>；对于键值在条件范围内但并不存在的记录，叫做“间隙（GAP)”。InnoDB也会对这个“间隙”加锁，这种锁机制就是所谓的间隙锁（间隙锁只会在<code>Repeatable read</code>隔离级别下使用）。</p>
+<p>InnoDB使用间隙锁的目的有两个：</p>
+<ul>
+<li><strong>为了防止幻读</strong> </li>
+<li>满足恢复和复制的需要<ul>
+<li>MySQL的恢复机制要求：<strong>在一个事务未提交前，其他并发事务不能插入满足其锁定条件的任何记录，也就是不允许出现幻读</strong> ；</li>
+</ul>
+</li>
+</ul>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本文介绍了MySQL数据锁以及事务的一些知识点，下面我们来总结一下；</p>
+<p>事务的四大特性：</p>
+<ul>
+<li><strong>原子性（Atomicity</strong> ：事务作为一个整体被执行，包含在其中的对数据库的操作要么全部被执行，要么都不执行。</li>
+<li><strong>一致性（Consistency）</strong>：事务应确保数据库的状态从一个一致状态转变为另一个一致状态。一致状态的含义是数据库中的数据应满足完整性约束。</li>
+<li><strong>隔离性（Isolation）</strong>：多个事务并发执行时，一个事务的执行不应影响其他事务的执行。</li>
+<li><strong>持久性（Durability）</strong>：一个事务一旦提交，他对数据库的修改应该永久保存在数据库中。</li>
+</ul>
+<p>对于事务的隔离级别也是很清楚的，分为四种：</p>
+<ul>
+<li>Read uncommitted：未提交读<ul>
+<li>最低级别，会出现脏读、不可重复读、幻读。</li>
+</ul>
+</li>
+<li>Read committed：已提交读<ul>
+<li>避免脏读，会出现不可重复读和幻读。</li>
+</ul>
+</li>
+<li>Repeatable read：可重复读<ul>
+<li>避免脏读和不可重复读，会出现幻读（在MySQL实现的Repeatable read配合gap锁不会出现幻读！）。</li>
+</ul>
+</li>
+<li>Serializable ：串行化<ul>
+<li>避免脏读、不可重复读、幻读。</li>
+</ul>
+</li>
+</ul>
+<p>MVCC(Multi-Version Concurrency Control)：<strong>多版本并发控制</strong> ，一句话总结就是 <strong>同一份数据临时保留多版本的一种方式，进而实现并发控制</strong> （上面也简单的演示了InnoDB MVCC的实现）；</p>
+<p>MVCC能够实现<strong>读写不阻塞</strong> ；</p>
+<p>快照有<strong>两个级别</strong>：</p>
+<ul>
+<li>语句级<ul>
+<li>针对于<code>Read committed</code>隔离级别</li>
+</ul>
+</li>
+<li>事务级别<ul>
+<li>针对于<code>Repeatable read</code>隔离级别</li>
+</ul>
+</li>
+</ul>
+<p><code>Repeatable read</code>避免不可重复读是<strong>事务级别</strong>的快照！每次读取的都是当前事务的版本，即使被修改了，也只会读取当前事务版本的数据。</p>
+<h1 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h1><p>本文简单的说了一下事务一块的东西，有问题的话还望大家指教，本人一定抱着虚心学习的态度。</p>
+<p>大家共同学习，一起进步！</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/MySQL/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/15/mysql-index/" rel="next" title="MySQL索引">
+                <i class="fa fa-chevron-left"></i> MySQL索引
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/04/14/mysql-lock/" rel="prev" title="MySQL锁">
+                MySQL锁 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="lv-container" data-id="city" data-uid="MTAyMC80MTg4OS8xODQzNQ"></div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/image/header.jpg" alt="Joeysh">
+            
+              <p class="site-author-name" itemprop="name">Joeysh</p>
+              <p class="site-description motion-element" itemprop="description">有志者自有千计万计，<br>无志者只感千难万难。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/Joeyangsh" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/4c825155dac8" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-blogger-b"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://juejin.im/user/5b854099f265da433874ee02" target="_blank" title="掘金">
+                      
+                        <i class="fa fa-fw fa-blogger-b"></i>掘金</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#引入"><span class="nav-number">2.</span> <span class="nav-text">引入</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#事务和MVCC"><span class="nav-number">3.</span> <span class="nav-text">事务和MVCC</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#特性"><span class="nav-number">3.1.</span> <span class="nav-text">特性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#原子性"><span class="nav-number">3.1.1.</span> <span class="nav-text">原子性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一致性"><span class="nav-number">3.1.2.</span> <span class="nav-text">一致性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#隔离性"><span class="nav-number">3.1.3.</span> <span class="nav-text">隔离性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#持久性"><span class="nav-number">3.1.4.</span> <span class="nav-text">持久性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#隔离级别"><span class="nav-number">3.2.</span> <span class="nav-text">隔离级别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#脏读"><span class="nav-number">3.2.1.</span> <span class="nav-text">脏读</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不可重复读"><span class="nav-number">3.2.2.</span> <span class="nav-text">不可重复读</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MVCC"><span class="nav-number">3.2.3.</span> <span class="nav-text">MVCC</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#InnoDB-MVCC实现分析"><span class="nav-number">3.2.3.1.</span> <span class="nav-text">InnoDB MVCC实现分析</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#例子"><span class="nav-number">3.2.3.2.</span> <span class="nav-text">例子</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#INSERT"><span class="nav-number">3.2.3.2.1.</span> <span class="nav-text">INSERT</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#SELECT"><span class="nav-number">3.2.3.2.2.</span> <span class="nav-text">SELECT</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#DELETE"><span class="nav-number">3.2.3.2.3.</span> <span class="nav-text">DELETE</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#UPDATE"><span class="nav-number">3.2.3.2.4.</span> <span class="nav-text">UPDATE</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#幻读"><span class="nav-number">3.2.4.</span> <span class="nav-text">幻读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#间隙锁"><span class="nav-number">3.2.4.1.</span> <span class="nav-text">间隙锁</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#最后"><span class="nav-number">5.</span> <span class="nav-text">最后</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Joeysh</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+    <script type="text/javascript">
+      (function(d, s) {
+        var j, e = d.getElementsByTagName(s)[0];
+        if (typeof LivereTower === 'function') { return; }
+        j = d.createElement(s);
+        j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+        j.async = true;
+        e.parentNode.insertBefore(j, e);
+      })(document, 'script');
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  
+  
+  <link rel="stylesheet" href="/lib/algolia-instant-search/instantsearch.min.css">
+
+  
+  
+  <script src="/lib/algolia-instant-search/instantsearch.min.js"></script>
+  
+
+  <script src="/js/src/algolia-search.js?v=5.1.4"></script>
+
+
+
+  
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+  
+
+  
+
+  
+  <script type="text/javascript" src="/js/src/js.cookie.js?v=5.1.4"></script>
+  <script type="text/javascript" src="/js/src/scroll-cookie.js?v=5.1.4"></script>
+
+
+  
+
+</body>
+</html>

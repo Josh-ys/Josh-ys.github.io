@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://joeysh.top/2019/04/14/mysql-transaction&mvcc/</loc>
+    
+    <lastmod>2019-04-14T05:20:08.220Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://joeysh.top/2019/04/14/mysql-lock/</loc>
+    
+    <lastmod>2019-04-14T05:17:41.688Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://joeysh.top/2019/02/15/mysql-index/</loc>
     
     <lastmod>2019-02-14T15:52:31.842Z</lastmod>
